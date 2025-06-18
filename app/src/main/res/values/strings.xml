@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">ASUS Router Dealer</string>
+    <string name="title_home">PRODUK</string>
+    <string name="title_dashboard">ORDER</string>
+    <string name="title_notifications">PROFIL</string>
+
+    <string name="title_product">Product</string>
+    <!-- res/values/strings.xml -->
+    <string name="product_name">Nama Produk</string>
+    <string name="product_price">Rp 0</string>
+    <string name="product_quantity">1</string>
+    <string name="desc_decrease">Kurangi</string>
+    <string name="desc_increase">Tambah</string>
+    <string name="desc_remove">Hapus Produk</string>
+    <string name="desc_product_image">Gambar Produk</string>
+    <string name="title_order">Daftar Pesanan</string>
+    <string name="total_payment">Total Bayar: Rp 0</string>
+    <string name="title_activity_home">home</string>
+
+
+</resources>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="@android:color/white"
+    tools:context=".ui.product.Profil">>
+
+    <!-- Nama Pengguna -->
+    <TextView
+        android:id="@+id/tvUsername"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PROFILE DAN INFROMASI"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="32dp" />
+
+    <!-- Tombol Edit Profil -->
+    <Button
+        android:id="@+id/btnEditProfile"
+        android:layout_width="200dp"
+        android:layout_height="48dp"
+        android:text="Edit Profil"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/purple_500"
+        android:textColor="@android:color/white"
+        android:elevation="4dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Tombol Kontak Kami -->
+    <Button
+        android:id="@+id/btnKontakKami"
+        android:layout_width="200dp"
+        android:layout_height="48dp"
+        android:text="Informasi Perusahaan"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/teal_700"
+        android:textColor="@android:color/white"
+        android:elevation="4dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Tombol Logout -->
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="200dp"
+        android:layout_height="48dp"
+        android:text="Logout"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/blue_primary"
+        android:textColor="@android:color/white"
+        android:elevation="4dp"
+        android:layout_marginTop="16dp" />
+</LinearLayout>

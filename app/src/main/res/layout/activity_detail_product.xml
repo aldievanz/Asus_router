@@ -1,0 +1,192 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8F9FA"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <!-- Product Image with Card View -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="240dp"
+            android:layout_height="240dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp"
+            android:layout_marginTop="8dp"
+            app:cardPreventCornerOverlap="true">
+
+            <ImageView
+                android:id="@+id/imageProduct"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:contentDescription="Gambar Produk"
+                android:padding="4dp"/>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Product Info Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:padding="16dp"
+            android:layout_marginTop="16dp">
+
+            <!-- Product Name -->
+            <TextView
+                android:id="@+id/tvMerk"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Merk Produk"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="#212121"
+                android:textAlignment="center"
+                android:fontFamily="sans-serif-medium"/>
+
+            <!-- Price with accent color -->
+            <TextView
+                android:id="@+id/tvHarga"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rp 123.456"
+                android:textSize="20sp"
+                android:textColor="#FF5722"
+                android:layout_marginTop="8dp"
+                android:textStyle="bold"
+                android:background="@drawable/price_background"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp"/>
+
+            <!-- Rating with improved styling -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="12dp">
+
+                <RatingBar
+                    android:id="@+id/ratingBar"
+                    style="@style/Widget.AppCompat.RatingBar.Small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:numStars="5"
+                    android:stepSize="0.1"
+                    android:isIndicator="true"
+                    android:progressTint="#FFC107"
+                    android:progressBackgroundTint="#E0E0E0"
+                    android:rating="4.5"/>
+
+                <TextView
+                    android:id="@+id/tvRatingText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="(123)"
+                    android:textSize="14sp"
+                    android:textColor="#757575"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="sans-serif"/>
+            </LinearLayout>
+
+            <!-- Stock with icon -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:id="@+id/tvStok"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Stok: 10"
+                    android:textSize="16sp"
+                    android:textColor="#757575"
+                    android:fontFamily="sans-serif"/>
+
+                <!-- Fix for tvViewer alignment -->
+                <TextView
+                    android:id="@+id/tvViewer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Dilihat: 120x"
+                    android:textColor="@android:color/darker_gray"
+                    android:textSize="15sp"
+                    android:layout_marginStart="8dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginTop="1dp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Description Card with Material Design -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Deskripsi Produk"
+                    android:textSize="16sp"
+                    android:textColor="#212121"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#E0E0E0"
+                    android:layout_marginBottom="12dp"/>
+
+                <TextView
+                    android:id="@+id/tvDeskripsi"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Deskripsi produk akan tampil di sini."
+                    android:textSize="15sp"
+                    android:textColor="#424242"
+                    android:lineSpacingMultiplier="1.2"/>
+                <TextView
+                    android:id="@+id/tvkategori"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="kategori akan muncul disini"
+                    android:textSize="15sp"
+                    android:textColor="@color/blue_primary"
+                    android:textStyle="bold"
+                    android:lineSpacingMultiplier="1.2"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Floating Action Button for Cart -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnKeranjang"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:contentDescription="Tambah ke Keranjang"
+            android:src="@drawable/ic_cart"
+            android:backgroundTint="#03A9F4"
+            app:tint="#FFFFFF"
+            app:elevation="8dp"
+            app:rippleColor="#03A9F4"/>
+    </LinearLayout>
+</ScrollView>
