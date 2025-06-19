@@ -21,6 +21,18 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
+            android:name=".ui.history.HistoryPesanan"
+            android:exported="false" />
+        <activity
+            android:name=".ui.product.EditPassword"
+            android:exported="false" />
+        <activity
+            android:name=".ui.product.EditPw"
+            android:exported="false" />
+        <activity
+            android:name=".ui.product.EditPW"
+            android:exported="false" />
+        <activity
             android:name=".ui.product.RegisterActivity"
             android:exported="false" />
         <activity android:name=".ui.checkout.activity_checkout" />

@@ -7,52 +7,92 @@
     android:gravity="center"
     android:padding="32dp"
     android:background="@android:color/white"
-    tools:context=".ui.product.Profil">>
+    tools:context=".ui.product.Profil">
+
+    <!-- Foto Profil -->
+    <ImageView
+        android:id="@+id/ivProfilePic"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginBottom="32dp"
+        android:src="@drawable/asus"
+        android:layout_gravity="center" />
 
     <!-- Nama Pengguna -->
     <TextView
         android:id="@+id/tvUsername"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="PROFILE DAN INFROMASI"
-        android:textSize="22sp"
+        android:text="PROFILE DAN INFORMASI"
+        android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="#333333"
-        android:layout_marginBottom="32dp" />
+        android:layout_marginBottom="32dp"
+        android:layout_gravity="center_horizontal" />
 
     <!-- Tombol Edit Profil -->
     <Button
         android:id="@+id/btnEditProfile"
-        android:layout_width="200dp"
+        android:layout_width="match_parent"
         android:layout_height="48dp"
         android:text="Edit Profil"
         android:textAllCaps="false"
         android:backgroundTint="@color/purple_500"
         android:textColor="@android:color/white"
-        android:elevation="4dp"
-        android:layout_marginBottom="16dp" />
+        android:elevation="6dp"
+        android:layout_marginBottom="16dp"
+        android:drawableLeft="@drawable/baseline_emoji_emotions_24" />
 
-    <!-- Tombol Kontak Kami -->
+    <!-- Tombol Ganti Password -->
+    <Button
+        android:id="@+id/btnEditPW"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Ganti Password"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/purple_200"
+        android:textColor="@android:color/white"
+        android:elevation="6dp"
+        android:layout_marginBottom="16dp"
+        android:drawableLeft="@drawable/baseline_create_24" />
+
+    <!-- Tombol Info Pesanan -->
+    <Button
+        android:id="@+id/btnInfoPesanan"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Ganti Password"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/on_surface_variant"
+        android:textColor="@android:color/white"
+        android:elevation="6dp"
+        android:layout_marginBottom="16dp"
+        android:drawableLeft="@drawable/baseline_create_24" />
+
+    <!-- Tombol Informasi Perusahaan -->
     <Button
         android:id="@+id/btnKontakKami"
-        android:layout_width="200dp"
+        android:layout_width="match_parent"
         android:layout_height="48dp"
         android:text="Informasi Perusahaan"
         android:textAllCaps="false"
         android:backgroundTint="@color/teal_700"
         android:textColor="@android:color/white"
-        android:elevation="4dp"
-        android:layout_marginBottom="16dp" />
+        android:elevation="6dp"
+        android:layout_marginBottom="16dp"
+        android:drawableLeft="@drawable/baseline_create_24" />
 
     <!-- Tombol Logout -->
     <Button
         android:id="@+id/btnLogout"
-        android:layout_width="200dp"
+        android:layout_width="match_parent"
         android:layout_height="48dp"
         android:text="Logout"
         android:textAllCaps="false"
         android:backgroundTint="@color/blue_primary"
         android:textColor="@android:color/white"
-        android:elevation="4dp"
-        android:layout_marginTop="16dp" />
+        android:elevation="6dp"
+        android:layout_marginTop="16dp"
+        android:drawableLeft="@drawable/baseline_create_24" />
+
 </LinearLayout>

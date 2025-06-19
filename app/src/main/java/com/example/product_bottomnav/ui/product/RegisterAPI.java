@@ -1,6 +1,8 @@
 // Updated RegisterAPI.java with correct uploadProfileImageWithEmail method
 package com.example.product_bottomnav.ui.product;
 
+import com.example.product_bottomnav.ui.notifications.ResponseOrderHistory;
+
 import java.util.List;
 
 import okhttp3.MultipartBody;
@@ -23,6 +25,25 @@ public interface RegisterAPI {
             @Field("email") String email,
             @Field("password") String password
     );
+    @FormUrlEncoded
+    @POST("update_password.php")
+    Call<ChangePasswordResponse> changePassword(
+            @Field("email") String email,  // email
+            @Field("password") String password  // ganti new_password dengan password
+    );
+    @Multipart
+    @POST("upload_bukti_bayar.php")
+    Call<ResponseBody> uploadBuktiBayar(
+            @Part("trans_id") RequestBody transId,
+            @Part MultipartBody.Part bukti_bayar
+    );
+    @GET("getOrderHistory.php")
+    Call<ResponseOrderHistory> getOrderHistory(
+            @Query("id") int idPelanggan
+    );
+    @GET("get_pesan.php")
+    Call<ResponseBody> getOrderHistory(@Query("email") String email);
+
 
     @FormUrlEncoded
     @POST("get_login.php")
@@ -30,7 +51,14 @@ public interface RegisterAPI {
             @Field("email") String email,
             @Field("password") String password
     );
-
+    @Multipart
+    @POST("get_pesan")  // Ganti dengan URL endpoint API Anda
+    Call<ResponseModel> submitOrder(
+            @Part("alamat_kirim") RequestBody address,
+            @Part("telp_kirim") RequestBody phone,
+            @Part("kodepos_kirim") RequestBody postal,
+            @Part("metode_bayar") RequestBody method
+    );
     @GET("get_profile.php")
     Call<UserResponse> getProfile(@Query("email") String email);
 

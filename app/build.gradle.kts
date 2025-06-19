@@ -55,13 +55,11 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
-    implementation("com.android.volley:volley:1.2.1")
-    implementation ("com.squareup.okhttp3:logging-interceptor:4.9.0")
-
+    implementation("com.squareup.okhttp3:logging-interceptor:4.9.0")
 
     // Image Loading
-    implementation("com.github.bumptech.glide:glide:4.12.0")
-    annotationProcessor("com.github.bumptech.glide:compiler:4.12.0")
+    implementation("com.github.bumptech.glide:glide:4.15.1") // Keep only one version of Glide
+    annotationProcessor("com.github.bumptech.glide:compiler:4.15.1")
 
     // Gson for JSON Parsing
     implementation("com.google.code.gson:gson:2.8.8")
@@ -73,12 +71,5 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.2.1")
 
     implementation("com.github.denzcoskun:ImageSlideshow:0.1.0")
-    implementation ("com.github.bumptech.glide:glide:4.15.1")
-    annotationProcessor ("com.github.bumptech.glide:compiler:4.15.1")
-    implementation ("com.github.bumptech.glide:glide:4.15.1")
-    annotationProcessor ("com.github.bumptech.glide:compiler:4.15.1")
-    implementation ("commons-io:commons-io:2.11.0")
-    implementation ("com.github.bumptech.glide:glide:4.13.0")
-    annotationProcessor ("com.github.bumptech.glide:compiler:4.13.0")
-
+    implementation("commons-io:commons-io:2.11.0")
 }
