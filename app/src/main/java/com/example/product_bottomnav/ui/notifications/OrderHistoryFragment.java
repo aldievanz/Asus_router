@@ -1,6 +1,5 @@
 package com.example.product_bottomnav.ui.notifications;
 
-
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
@@ -11,15 +10,19 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
-import com.example.product_bottomnav.R;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.product_bottomnav.R;
 import com.example.product_bottomnav.ui.model.OrderModel;
 import com.example.product_bottomnav.ui.product.RegisterAPI;
 import com.example.product_bottomnav.ui.product.ServerAPI;
+import com.example.product_bottomnav.ui.product.SharedPrefManager;
+
 import java.io.File;
 import java.util.List;
 
@@ -30,6 +33,8 @@ import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class OrderHistoryFragment extends Fragment {
 
@@ -39,19 +44,21 @@ public class OrderHistoryFragment extends Fragment {
 
     private Uri imageUri;
     private OrderModel selectedOrder;
-
-    // Ganti dengan user login aktif
-    private int userId = 13;
+    private int userId;
+    private String metodeBayar = "transfer";  // Menambahkan metode pembayaran default
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_order_history, container, false);
 
+        // Mendapatkan userId dari SharedPreferences
+        userId = SharedPrefManager.getInstance(getContext()).getUserId();
+
         rvOrder = view.findViewById(R.id.rvOrderHistory);
         rvOrder.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        loadOrderHistory();
+        loadOrderHistory(); // Memuat riwayat pesanan saat view dibuka
 
         return view;
     }
@@ -70,11 +77,11 @@ public class OrderHistoryFragment extends Fragment {
                         @Override
                         public void onPilihGambarClicked(OrderModel order) {
                             selectedOrder = order;
-                            openGallery();
+                            openGallery(); // Buka galeri untuk memilih gambar
                         }
                     });
 
-                    rvOrder.setAdapter(adapter);
+                    rvOrder.setAdapter(adapter); // Set adapter ke RecyclerView
                 } else {
                     Toast.makeText(getContext(), "Gagal: " + (response.body() != null ? response.body().getMessage() : "Null response"), Toast.LENGTH_SHORT).show();
                 }
@@ -90,7 +97,7 @@ public class OrderHistoryFragment extends Fragment {
     private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType("image/*");
-        startActivityForResult(intent, PICK_IMAGE_REQUEST);
+        startActivityForResult(intent, PICK_IMAGE_REQUEST); // Menunggu gambar yang dipilih
     }
 
     @Override
@@ -98,13 +105,13 @@ public class OrderHistoryFragment extends Fragment {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
-            imageUri = data.getData();
-            uploadBuktiBayar(selectedOrder.getTrans_id(), imageUri);
+            imageUri = data.getData(); // Mendapatkan URI gambar yang dipilih
+            uploadBuktiBayar(selectedOrder.getTrans_id(), imageUri, metodeBayar); // Mengirimkan metodeBayar
         }
     }
 
-    private void uploadBuktiBayar(int transId, Uri imageUri) {
-        String filePath = getRealPathFromURI(imageUri);
+    private void uploadBuktiBayar(int transId, Uri imageUri, String metodeBayar) {
+        String filePath = getRealPathFromURI(imageUri); // Mendapatkan path file gambar
         if (filePath == null) {
             Toast.makeText(getContext(), "Gagal membaca file gambar", Toast.LENGTH_SHORT).show();
             return;
@@ -113,16 +120,29 @@ public class OrderHistoryFragment extends Fragment {
         File file = new File(filePath);
         RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
         MultipartBody.Part body = MultipartBody.Part.createFormData("bukti_bayar", file.getName(), requestFile);
-        RequestBody id = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(transId));
 
-        RegisterAPI api = ServerAPI.getClient().create(RegisterAPI.class);
-        Call<ResponseBody> call = api.uploadBuktiBayar(id, body);
+        RequestBody transIdBody = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(transId));
+        RequestBody metodeBayarBody = RequestBody.create(MediaType.parse("text/plain"), metodeBayar);  // Mengirimkan metodeBayar
 
+        // Retrofit untuk mengirimkan data
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(ServerAPI.BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RegisterAPI api = retrofit.create(RegisterAPI.class);
+        Call<ResponseBody> call = api.uploadBuktiBayar(transIdBody, body, metodeBayarBody);  // Menambahkan metodeBayar
+
+        // Eksekusi API call
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                Toast.makeText(getContext(), "Upload berhasil", Toast.LENGTH_SHORT).show();
-                loadOrderHistory(); // Refresh list
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Upload berhasil", Toast.LENGTH_SHORT).show();
+                    loadOrderHistory(); // Refresh list setelah upload berhasil
+                } else {
+                    Toast.makeText(getContext(), "Upload gagal: " + response.message(), Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override

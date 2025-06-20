@@ -1,7 +1,7 @@
 package com.example.product_bottomnav.ui.checkout;
 
 import android.app.ProgressDialog;
-import android.content.SharedPreferences;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -30,10 +30,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -42,6 +47,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class activity_checkout extends AppCompatActivity {
+
+    // Declare UI components
     private TextView tvUserName;
     private EditText etShippingAddress, etShippingPhone, etKodePos;
     private Spinner spinnerProvince, spinnerCity, spinnerCourier;
@@ -51,18 +58,22 @@ public class activity_checkout extends AppCompatActivity {
     private RecyclerView recyclerViewOrderItems;
     private OrderItemAdapter orderItemAdapter;
 
+    // Province and city data
     private ArrayList<String> provinceNames = new ArrayList<>();
     private ArrayList<Integer> provinceIds = new ArrayList<>();
     private ArrayList<String> cityNames = new ArrayList<>();
     private ArrayList<Integer> cityIds = new ArrayList<>();
+
+    // Shipping and payment data
     private int selectedCityId = 0;
     private double subtotal = 0;
     private double shippingCost = 0;
     private String shippingEstimation = "";
     private String selectedCourier = "";
-    private String originCityId = "399"; // Default city (example, you can modify it)
+    private String originCityId = "399"; // Origin city ID (can be adjusted)
 
-    private int userId = 1;
+    // User data
+    private int userId;
     private String userName = "";
     private String userAddress = "";
     private String userPhone = "";
@@ -70,10 +81,17 @@ public class activity_checkout extends AppCompatActivity {
     private String userProvince = "";
     private String userPostalCode = "";
 
+    // Currency format
+    private NumberFormat currencyFormat;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_checkout);
+
+        // Initialize currency format
+        currencyFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+        currencyFormat.setMaximumFractionDigits(0);
 
         initUI();
         loadUserData();
@@ -103,20 +121,11 @@ public class activity_checkout extends AppCompatActivity {
     private void setupRecyclerView() {
         ArrayList<OrderItem> orderItems = getIntent().getParcelableArrayListExtra("ORDER_ITEMS");
 
-        // Debug log untuk memastikan data diterima dengan benar
-        if (orderItems != null) {
-            Log.d("CHECKOUT_DEBUG", "Jumlah item: " + orderItems.size());
-            for (OrderItem item : orderItems) {
-                Log.d("CHECKOUT_DEBUG", "Item: " + item.getMerk() +
-                        ", Qty: " + item.getQuantity() +
-                        ", Foto: " + item.getFoto());
-            }
-        } else {
-            Log.e("CHECKOUT_DEBUG", "Order items null");
-            orderItems = new ArrayList<>(); // Fallback
+        if (orderItems == null) {
+            orderItems = new ArrayList<>();
+            Log.e("CHECKOUT_DEBUG", "Order items list is empty");
         }
 
-        // Pastikan RecyclerView di-setup dengan benar
         recyclerViewOrderItems.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewOrderItems.setHasFixedSize(true);
 
@@ -126,18 +135,19 @@ public class activity_checkout extends AppCompatActivity {
         calculateSubtotal(orderItems);
     }
 
-    private void calculateSubtotal(ArrayList<OrderItem> orderItems) {
+    private void calculateSubtotal(List<OrderItem> orderItems) {
         subtotal = 0;
         for (OrderItem item : orderItems) {
             subtotal += item.getSubtotal();
         }
-        tvSubtotal.setText("Rp " + String.format("%,.0f", subtotal));
+        tvSubtotal.setText(currencyFormat.format(subtotal));
         updateTotalPayment();
     }
 
     private void setupCourierSpinner() {
         List<String> couriers = Arrays.asList("Pilih Kurir", "jne", "tiki", "pos");
-        ArrayAdapter<String> courierAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, couriers);
+        ArrayAdapter<String> courierAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, couriers);
         courierAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCourier.setAdapter(courierAdapter);
 
@@ -207,27 +217,22 @@ public class activity_checkout extends AppCompatActivity {
     }
 
     private void loadUserData() {
-        // Mengambil data pengguna dari SharedPreferences menggunakan SharedPrefManager
         SharedPrefManager sharedPrefManager = SharedPrefManager.getInstance(this);
+        userId = sharedPrefManager.getUserId();
+        userName = sharedPrefManager.getNama();
+        userAddress = sharedPrefManager.getAlamat();
+        userPhone = sharedPrefManager.getTelp();
+        userCity = sharedPrefManager.getKota();
+        userProvince = sharedPrefManager.getProvinsi();
+        userPostalCode = sharedPrefManager.getKodepos();
 
-        userName = sharedPrefManager.getNama();  // Nama pengguna
-        userAddress = sharedPrefManager.getAlamat();  // Alamat pengguna
-        userPhone = sharedPrefManager.getTelp();  // Nomor telepon pengguna
-        userCity = sharedPrefManager.getKota();  // Kota pengguna
-        userProvince = sharedPrefManager.getProvinsi();  // Provinsi pengguna
-        userPostalCode = sharedPrefManager.getKodepos();  // Kode pos pengguna
-
-        // Menampilkan data ke UI
         tvUserName.setText(userName);
         etShippingAddress.setText(userAddress);
         etShippingPhone.setText(userPhone);
         etKodePos.setText(userPostalCode);
 
-        // Setelah data ditarik, panggil untuk memuat provinsi dan kota
         loadProvinces();
     }
-
-
 
     private void loadProvinces() {
         ProgressDialog pd = new ProgressDialog(this);
@@ -241,7 +246,7 @@ public class activity_checkout extends AppCompatActivity {
                 .build();
 
         RegisterAPI api = retrofit.create(RegisterAPI.class);
-        Call<ResponseBody> call = api.getProvinsi(); // Memanggil API untuk mendapatkan provinsi
+        Call<ResponseBody> call = api.getProvinsi();
 
         call.enqueue(new Callback<ResponseBody>() {
             @Override
@@ -261,7 +266,6 @@ public class activity_checkout extends AppCompatActivity {
                     provinceNames.clear();
                     provinceIds.clear();
 
-                    // Parsing data provinsi
                     for (int i = 0; i < results.length(); i++) {
                         JSONObject province = results.getJSONObject(i);
                         provinceNames.add(province.getString("province"));
@@ -276,7 +280,6 @@ public class activity_checkout extends AppCompatActivity {
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                     spinnerProvince.setAdapter(adapter);
 
-                    // Set pilihan provinsi berdasarkan data pengguna
                     if (!userProvince.isEmpty()) {
                         for (int i = 0; i < provinceNames.size(); i++) {
                             if (provinceNames.get(i).equalsIgnoreCase(userProvince)) {
@@ -302,7 +305,8 @@ public class activity_checkout extends AppCompatActivity {
         if (provinceId == 0) {
             cityNames.clear();
             cityNames.add("Pilih Kota");
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, cityNames);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                    android.R.layout.simple_spinner_item, cityNames);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinnerCity.setAdapter(adapter);
             return;
@@ -319,7 +323,7 @@ public class activity_checkout extends AppCompatActivity {
                 .build();
 
         RegisterAPI api = retrofit.create(RegisterAPI.class);
-        Call<ResponseBody> call = api.getKota(provinceId); // Memanggil API untuk mendapatkan kota berdasarkan provinsi
+        Call<ResponseBody> call = api.getKota(provinceId);
 
         call.enqueue(new Callback<ResponseBody>() {
             @Override
@@ -353,7 +357,6 @@ public class activity_checkout extends AppCompatActivity {
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                     spinnerCity.setAdapter(adapter);
 
-                    // Set pilihan kota berdasarkan data pengguna
                     if (!userCity.isEmpty()) {
                         for (int i = 0; i < cityNames.size(); i++) {
                             if (cityNames.get(i).equalsIgnoreCase(userCity)) {
@@ -514,7 +517,7 @@ public class activity_checkout extends AppCompatActivity {
             }
 
             runOnUiThread(() -> {
-                tvShippingCost.setText("Rp " + String.format("%,.0f", shippingCost));
+                tvShippingCost.setText(currencyFormat.format(shippingCost));
                 tvShippingEstimation.setText(shippingEstimation);
                 updateTotalPayment();
 
@@ -542,7 +545,7 @@ public class activity_checkout extends AppCompatActivity {
 
     private void updateTotalPayment() {
         double total = subtotal + shippingCost;
-        tvTotalPayment.setText("Rp " + String.format("%,.0f", total));
+        tvTotalPayment.setText(currencyFormat.format(total));
     }
 
     private boolean validatePayment() {
@@ -609,17 +612,126 @@ public class activity_checkout extends AppCompatActivity {
         pd.setCancelable(false);
         pd.show();
 
-        // Implementasi penyimpanan order ke database atau API
+        // Implement saving order to database or API
         saveOrderToDatabase(paymentMethod);
-
-        pd.dismiss();
-        Toast.makeText(this, "Pesanan berhasil diproses", Toast.LENGTH_SHORT).show();
-        finish();
     }
 
     private void saveOrderToDatabase(String paymentMethod) {
-        // Implementasi penyimpanan order ke database atau API
-        // ...
+        ProgressDialog pd = new ProgressDialog(this);
+        pd.setMessage("Memproses pesanan...");
+        pd.setCancelable(false);
+        pd.show();
+
+        // Get data from form
+        String namaKirim = tvUserName.getText().toString();
+        String alamatKirim = etShippingAddress.getText().toString().trim();
+        String kotaKirim = spinnerCity.getSelectedItem().toString();
+        String provinsiKirim = spinnerProvince.getSelectedItem().toString();
+        String kodeposKirim = etKodePos.getText().toString().trim();
+        String telpKirim = etShippingPhone.getText().toString().trim();
+        String emailKirim = SharedPrefManager.getInstance(this).getEmail();
+
+        // Calculate total
+        double totalBayar = subtotal + shippingCost;
+
+        // Get order items from adapter
+        List<OrderItem> orderItems = orderItemAdapter.getOrderItems();
+
+        // Create request to save order
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(ServerAPI.BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RegisterAPI api = retrofit.create(RegisterAPI.class);
+
+        // Create request body
+        RequestBody idPelanggan = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(userId));
+        RequestBody rNamaKirim = RequestBody.create(MediaType.parse("text/plain"), namaKirim);
+        RequestBody rEmailKirim = RequestBody.create(MediaType.parse("text/plain"), emailKirim);
+        RequestBody rTelpKirim = RequestBody.create(MediaType.parse("text/plain"), telpKirim);
+        RequestBody rAlamatKirim = RequestBody.create(MediaType.parse("text/plain"), alamatKirim);
+        RequestBody rKotaKirim = RequestBody.create(MediaType.parse("text/plain"), kotaKirim);
+        RequestBody rProvinsiKirim = RequestBody.create(MediaType.parse("text/plain"), provinsiKirim);
+        RequestBody rKodeposKirim = RequestBody.create(MediaType.parse("text/plain"), kodeposKirim);
+        RequestBody rLamaKirim = RequestBody.create(MediaType.parse("text/plain"), shippingEstimation);
+        RequestBody rSubtotal = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(subtotal));
+        RequestBody rOngkir = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(shippingCost));
+        RequestBody rTotalBayar = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(totalBayar));
+        RequestBody rMetodeBayar = RequestBody.create(MediaType.parse("text/plain"), paymentMethod.toLowerCase());
+        RequestBody rStatus = RequestBody.create(MediaType.parse("text/plain"), "menunggu");
+
+        // Create list for order details
+        List<MultipartBody.Part> detailParts = new ArrayList<>();
+        for (OrderItem item : orderItems) {
+            RequestBody kode = RequestBody.create(MediaType.parse("text/plain"), item.getKode());
+            RequestBody harga = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(item.getHarga()));
+            RequestBody qty = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(item.getQuantity()));
+            RequestBody bayar = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(item.getSubtotal()));
+
+            detailParts.add(MultipartBody.Part.createFormData("kode[]", null, kode));
+            detailParts.add(MultipartBody.Part.createFormData("harga[]", null, harga));
+            detailParts.add(MultipartBody.Part.createFormData("qty[]", null, qty));
+            detailParts.add(MultipartBody.Part.createFormData("bayar[]", null, bayar));
+        }
+
+        Call<ResponseBody> call = api.createOrder(
+                idPelanggan,
+                rNamaKirim,
+                rEmailKirim,
+                rTelpKirim,
+                rAlamatKirim,
+                rKotaKirim,
+                rProvinsiKirim,
+                rKodeposKirim,
+                rLamaKirim,
+                rSubtotal,
+                rOngkir,
+                rTotalBayar,
+                rMetodeBayar,
+                rStatus,
+                detailParts
+        );
+
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                pd.dismiss();
+                if (response.isSuccessful()) {
+                    try {
+                        String jsonResponse = response.body().string();
+                        JSONObject json = new JSONObject(jsonResponse);
+
+                        if (json.getBoolean("status")) {
+                            Toast.makeText(activity_checkout.this, "Pesanan berhasil dibuat", Toast.LENGTH_SHORT).show();
+
+                            // If payment method is transfer, navigate to upload payment proof
+                            if (paymentMethod.equalsIgnoreCase("transfer")) {
+                                int transId = json.getInt("trans_id");
+                                Intent intent = new Intent(activity_checkout.this, UploadBuktiBayarActivity.class);
+                                intent.putExtra("TRANS_ID", transId);
+                                intent.putExtra("TOTAL_BAYAR", totalBayar);
+                                startActivity(intent);
+                            }
+
+                            finish(); // Close checkout activity
+                        } else {
+                            Toast.makeText(activity_checkout.this, "Gagal: " + json.getString("message"), Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        handleError("Gagal memproses response", e);
+                    }
+                } else {
+                    handleError("Gagal membuat pesanan: " + response.code(), null);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                pd.dismiss();
+                handleError("Error koneksi saat membuat pesanan", t);
+            }
+        });
     }
 
     private void handleError(String message, Throwable t) {

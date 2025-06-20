@@ -16,6 +16,26 @@
     <string name="title_order">Daftar Pesanan</string>
     <string name="total_payment">Total Bayar: Rp 0</string>
     <string name="title_activity_home">home</string>
+    <!-- Order History -->
+    <string name="title_order_history">Riwayat Pesanan</string>
+    <string name="empty_order_history">Belum ada riwayat pesanan</string>
+    <string name="loading_orders">Memuat data pesanan...</string>
+    <string name="error_load_orders">Gagal memuat riwayat pesanan</string>
+
+    <!-- Order Item -->
+    <string name="label_estimasi">Estimasi: %1$s hari</string>
+    <string name="label_tanggal_order">Tanggal: %1$s</string>
+    <string name="label_subtotal">Subtotal: %1$s</string>
+    <string name="label_ongkir">Ongkir: %1$s</string>
+    <string name="label_total">Total: %1$s</string>
+    <string name="label_status">Status: %1$s</string>
+    <string name="btn_upload_proof">Upload Bukti Bayar</string>
+
+    <!-- Status Messages -->
+    <string name="msg_upload_success">Bukti bayar berhasil diupload</string>
+    <string name="msg_upload_failed">Gagal mengupload bukti bayar</string>
+    <string name="confirm_upload">Anda yakin ingin mengupload bukti pembayaran ini?</string>
+    <string name="error_image_load">Gagal memuat gambar</string>
 
 
 </resources>

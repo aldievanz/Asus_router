@@ -14,13 +14,20 @@ import com.example.product_bottomnav.R;
 import com.example.product_bottomnav.ui.dashboard.OrderItem;
 import com.example.product_bottomnav.ui.product.ServerAPI;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 public class OrderItemAdapter extends RecyclerView.Adapter<OrderItemAdapter.ViewHolder> {
-    private ArrayList<OrderItem> orderItems;
+    private List<OrderItem> daftarItem;
+    private NumberFormat formatRupiah;
 
-    public OrderItemAdapter(ArrayList<OrderItem> orderItems) {
-        this.orderItems = orderItems != null ? orderItems : new ArrayList<>();
+    // Constructor
+    public OrderItemAdapter(List<OrderItem> daftarItem) {
+        this.daftarItem = daftarItem != null ? daftarItem : new ArrayList<>();
+        this.formatRupiah = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+        this.formatRupiah.setMaximumFractionDigits(0);
     }
 
     @NonNull
@@ -33,35 +40,59 @@ public class OrderItemAdapter extends RecyclerView.Adapter<OrderItemAdapter.View
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        OrderItem item = orderItems.get(position);
-
-        holder.tvProductName.setText(item.getMerk());
-        holder.tvQuantity.setText("Qty: " + item.getQuantity());
-        holder.tvPrice.setText("Rp " + String.format("%,.0f", item.getSubtotal()));
-
-        // Load image with Glide
-        Glide.with(holder.itemView.getContext())
-                .load(ServerAPI.BASE_URL_Image + item.getFoto())
-                .placeholder(R.drawable.placeholder_product)
-                .error(R.drawable.placeholder_product)
-                .into(holder.ivProductImage);
+        OrderItem item = daftarItem.get(position);
+        holder.tampilkanData(item);
     }
 
     @Override
     public int getItemCount() {
-        return orderItems.size();
+        return daftarItem.size();
     }
 
+    // Method untuk mendapatkan daftar item
+    public List<OrderItem> getOrderItems() {
+        return new ArrayList<>(daftarItem); // Return copy untuk menghindari modifikasi langsung
+    }
+
+    // Method untuk memperbarui data
+    public void updateData(List<OrderItem> dataBaru) {
+        this.daftarItem.clear();
+        if (dataBaru != null) {
+            this.daftarItem.addAll(dataBaru);
+        }
+        notifyDataSetChanged();
+    }
+
+    // Kelas ViewHolder
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivProductImage;
-        TextView tvProductName, tvQuantity, tvPrice;
+        private final ImageView ivGambarProduk;
+        private final TextView tvNamaProduk;
+        private final TextView tvJumlah;
+        private final TextView tvHarga;
+        private final NumberFormat formatRupiah;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivProductImage = itemView.findViewById(R.id.ivProductImage);
-            tvProductName = itemView.findViewById(R.id.tvProductName);
-            tvQuantity = itemView.findViewById(R.id.tvQuantity);
-            tvPrice = itemView.findViewById(R.id.tvPrice);
+            ivGambarProduk = itemView.findViewById(R.id.ivProductImage);
+            tvNamaProduk = itemView.findViewById(R.id.tvProductName);
+            tvJumlah = itemView.findViewById(R.id.tvQuantity);
+            tvHarga = itemView.findViewById(R.id.tvPrice);
+
+            formatRupiah = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+            formatRupiah.setMaximumFractionDigits(0);
+        }
+
+        public void tampilkanData(OrderItem item) {
+            tvNamaProduk.setText(item.getMerk());
+            tvJumlah.setText("Jumlah: " + item.getQuantity());
+            tvHarga.setText(formatRupiah.format(item.getSubtotal()));
+
+            // Load gambar dengan Glide
+            Glide.with(itemView.getContext())
+                    .load(ServerAPI.BASE_URL_Image + item.getFoto())
+                    .placeholder(R.drawable.placeholder_product)
+                    .error(R.drawable.placeholder_product)
+                    .into(ivGambarProduk);
         }
     }
 }

@@ -19,16 +19,6 @@ public class OrderItem implements Parcelable {
         this.hargajual = product.getHargajual();
         this.quantity = 1; // Default quantity when first added
     }
-
-    // Regular constructor
-    public OrderItem(String kode, String merk, String foto, double hargajual, int quantity) {
-        this.kode = kode;
-        this.merk = merk;
-        this.foto = foto;
-        this.hargajual = hargajual;
-        this.quantity = quantity;
-    }
-
     // Parcelable implementation
     protected OrderItem(Parcel in) {
         kode = in.readString();
@@ -81,6 +71,11 @@ public class OrderItem implements Parcelable {
         return hargajual;
     }
 
+    // Alias for getHargajual()
+    public double getHarga() {
+        return hargajual;
+    }
+
     public int getQuantity() {
         return quantity;
     }
@@ -90,7 +85,7 @@ public class OrderItem implements Parcelable {
         this.quantity = quantity;
     }
 
-    // Helper methods
+    // Helper method to calculate the subtotal
     public double getSubtotal() {
         return hargajual * quantity;
     }

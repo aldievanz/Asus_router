@@ -35,4 +35,11 @@
         android:label="PROFILE"
         tools:layout="@layout/fragment_guest" />
 
+    <!-- Menambahkan OrderHistoryFragment -->
+    <fragment
+        android:id="@+id/orderHistoryFragment"
+        android:name="com.example.product_bottomnav.ui.notifications.OrderHistoryFragment"
+        android:label="Order History"
+        tools:layout="@layout/fragment_order_history" />
+
 </navigation>

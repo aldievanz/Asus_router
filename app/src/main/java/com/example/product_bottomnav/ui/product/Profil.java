@@ -5,11 +5,9 @@ import static com.example.product_bottomnav.ui.product.ServerAPI.BASE_URL_Image_
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -93,6 +91,14 @@ public class Profil extends Fragment {
                 startActivity(intent);
                 requireActivity().finish();
             });
+
+            // Menangani klik pada tombol History Pesanan
+            Button btnHistoryPesanan = root.findViewById(R.id.btnHistoryPesanan);
+            btnHistoryPesanan.setOnClickListener(v -> {
+                // Mendapatkan NavController
+                navController.navigate(R.id.orderHistoryFragment);  // Arahkan ke OrderHistoryFragment
+            });
+
             // Menangani klik pada tombol Edit Password
             Button btnEditPW = root.findViewById(R.id.btnEditPW);
             btnEditPW.setOnClickListener(v -> {
@@ -111,25 +117,24 @@ public class Profil extends Fragment {
 
     // Memuat gambar dari server menggunakan Glide
     private void loadImageFromServer(String imageUrl) {
-        // Memastikan URL gambar lengkap dengan waktu agar gambar tidak di-cache
         String fullUrl = imageUrl.startsWith("http") ? imageUrl : BASE_URL_Image_Avatar + imageUrl;
 
         Glide.with(this)
-                .load(fullUrl)  // Memuat gambar dari URL
-                .circleCrop()  // Membuat gambar berbentuk lingkaran
-                .skipMemoryCache(true)  // Menghindari cache di memori
-                .diskCacheStrategy(DiskCacheStrategy.NONE)  // Tidak menyimpan cache di disk
-                .placeholder(R.drawable.asus)  // Menampilkan gambar placeholder sementara
-                .error(R.drawable.asus)  // Menampilkan gambar fallback jika terjadi error
-                .into(ivProfilePic);  // Memasukkan gambar ke dalam ImageView
+                .load(fullUrl)
+                .circleCrop()
+                .skipMemoryCache(true)
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .placeholder(R.drawable.asus)
+                .error(R.drawable.asus)
+                .into(ivProfilePic);
     }
 
     // Memuat gambar default jika URL tidak ditemukan
     private void loadDefaultImage() {
         Glide.with(this)
-                .load(R.drawable.asus)  // Gambar default
-                .circleCrop()  // Membuat gambar berbentuk lingkaran
-                .into(ivProfilePic);  // Memasukkan gambar ke dalam ImageView
+                .load(R.drawable.asus)
+                .circleCrop()
+                .into(ivProfilePic);
     }
 
     // Jika terjadi kesalahan, arahkan pengguna ke fragment tamu

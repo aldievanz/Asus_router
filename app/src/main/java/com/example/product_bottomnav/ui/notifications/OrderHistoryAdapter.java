@@ -1,4 +1,5 @@
 package com.example.product_bottomnav.ui.notifications;
+
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,9 +13,10 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.product_bottomnav.R;
 import com.example.product_bottomnav.ui.model.OrderModel;
 import com.example.product_bottomnav.ui.product.ServerAPI;
-import com.example.product_bottomnav.R;
+
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;

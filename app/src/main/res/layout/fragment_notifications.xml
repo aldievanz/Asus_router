@@ -58,10 +58,10 @@
 
     <!-- Tombol Info Pesanan -->
     <Button
-        android:id="@+id/btnInfoPesanan"
+        android:id="@+id/btnHistoryPesanan"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="Ganti Password"
+        android:text="History Pesanan"
         android:textAllCaps="false"
         android:backgroundTint="@color/on_surface_variant"
         android:textColor="@android:color/white"
