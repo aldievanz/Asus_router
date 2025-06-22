@@ -49,7 +49,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class activity_checkout extends AppCompatActivity {
 
-    // Deklarasi komponen UI
+    // UI Components
     private TextView tvUserName;
     private EditText etShippingAddress, etShippingPhone, etKodePos;
     private Spinner spinnerProvince, spinnerCity, spinnerCourier;
@@ -60,21 +60,21 @@ public class activity_checkout extends AppCompatActivity {
     private OrderItemAdapter orderItemAdapter;
     private OrderHelper orderHelper;
 
-    // Data untuk provinsi dan kota
+    // Data
     private ArrayList<String> provinceNames = new ArrayList<>();
     private ArrayList<Integer> provinceIds = new ArrayList<>();
     private ArrayList<String> cityNames = new ArrayList<>();
     private ArrayList<Integer> cityIds = new ArrayList<>();
 
-    // Variabel lainnya
+    // Variables
     private int selectedCityId = 0;
     private double subtotal = 0;
     private double shippingCost = 0;
     private String shippingEstimation = "";
     private String selectedCourier = "";
-    private String originCityId = "399"; // ID kota asal
+    private String originCityId = "399";
 
-    // Data user
+    // User data
     private int userId;
     private String userName = "";
     private String userAddress = "";
@@ -91,15 +91,12 @@ public class activity_checkout extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_checkout);
 
-        // Inisialisasi format mata uang
         currencyFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
         currencyFormat.setMaximumFractionDigits(0);
 
-        // Inisialisasi OrderHelper
         userId = SharedPrefManager.getInstance(this).getUserId();
         orderHelper = new OrderHelper(this, userId);
 
-        // Setup UI
         initUI();
         loadUserData();
         setupRecyclerView();
@@ -225,12 +222,11 @@ public class activity_checkout extends AppCompatActivity {
     private int calculateTotalWeight() {
         List<OrderItem> items = orderItemAdapter.getOrderItems();
         int totalWeight = 0;
-        // Berat default per item 1kg (1000 gram)
         final int DEFAULT_ITEM_WEIGHT = 1000;
         for (OrderItem item : items) {
             totalWeight += DEFAULT_ITEM_WEIGHT * item.getQuantity();
         }
-        return totalWeight < 1000 ? 1000 : totalWeight; // Minimal berat 1kg
+        return totalWeight < 1000 ? 1000 : totalWeight;
     }
 
     private void loadUserData() {
@@ -463,6 +459,19 @@ public class activity_checkout extends AppCompatActivity {
         });
     }
 
+    private void showShippingError(String courier, String message) {
+        runOnUiThread(() -> {
+            Toast.makeText(activity_checkout.this,
+                    courier.toUpperCase() + ": " + message,
+                    Toast.LENGTH_LONG).show();
+
+            tvShippingCost.setText("-");
+            tvShippingEstimation.setText("-");
+            shippingCost = 0;
+            updateTotalPayment();
+        });
+    }
+
     private void processAvailableServices(String courier, JSONArray costs) throws JSONException {
         List<String> preferredServices = new ArrayList<>();
         String serviceNameKey = "service";
@@ -534,19 +543,6 @@ public class activity_checkout extends AppCompatActivity {
         }
     }
 
-    private void showShippingError(String courier, String message) {
-        runOnUiThread(() -> {
-            Toast.makeText(activity_checkout.this,
-                    courier.toUpperCase() + ": " + message,
-                    Toast.LENGTH_LONG).show();
-
-            tvShippingCost.setText("-");
-            tvShippingEstimation.setText("-");
-            shippingCost = 0;
-            updateTotalPayment();
-        });
-    }
-
     private void updateTotalPayment() {
         double total = subtotal + shippingCost;
         tvTotalPayment.setText(currencyFormat.format(total));
@@ -611,7 +607,6 @@ public class activity_checkout extends AppCompatActivity {
         RadioButton selectedPayment = findViewById(radioPaymentMethod.getCheckedRadioButtonId());
         String paymentMethod = selectedPayment.getText().toString().toLowerCase();
 
-        // Konversi ke format yang sesuai untuk database
         if (paymentMethod.contains("cod") || paymentMethod.contains("cash on delivery")) {
             paymentMethod = "cod";
         } else {
@@ -623,7 +618,6 @@ public class activity_checkout extends AppCompatActivity {
     }
 
     private void saveOrderToDatabase(String paymentMethod) {
-        // Ambil data dari form
         String namaKirim = tvUserName.getText().toString();
         String alamatKirim = etShippingAddress.getText().toString().trim();
         String kotaKirim = spinnerCity.getSelectedItem().toString();
@@ -632,13 +626,9 @@ public class activity_checkout extends AppCompatActivity {
         String telpKirim = etShippingPhone.getText().toString().trim();
         String emailKirim = SharedPrefManager.getInstance(this).getEmail();
 
-        // Hitung total pembayaran
         double totalBayar = subtotal + shippingCost;
-
-        // Ambil daftar item dari adapter
         List<OrderItem> orderItems = orderItemAdapter.getOrderItems();
 
-        // Buat request untuk menyimpan pesanan
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(ServerAPI.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -646,7 +636,6 @@ public class activity_checkout extends AppCompatActivity {
 
         RegisterAPI api = retrofit.create(RegisterAPI.class);
 
-        // Buat request body
         RequestBody idPelanggan = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(userId));
         RequestBody rNamaKirim = RequestBody.create(MediaType.parse("text/plain"), namaKirim);
         RequestBody rEmailKirim = RequestBody.create(MediaType.parse("text/plain"), emailKirim);
@@ -662,7 +651,6 @@ public class activity_checkout extends AppCompatActivity {
         RequestBody rMetodeBayar = RequestBody.create(MediaType.parse("text/plain"), paymentMethod);
         RequestBody rStatus = RequestBody.create(MediaType.parse("text/plain"), paymentMethod.equals("cod") ? "diproses" : "menunggu");
 
-        // Buat list untuk detail pesanan
         List<MultipartBody.Part> detailParts = new ArrayList<>();
         for (OrderItem item : orderItems) {
             RequestBody kode = RequestBody.create(MediaType.parse("text/plain"), item.getKode());
@@ -676,7 +664,6 @@ public class activity_checkout extends AppCompatActivity {
             detailParts.add(MultipartBody.Part.createFormData("bayar[]", null, bayar));
         }
 
-        // Kirim request untuk membuat pesanan
         Call<ResponseBody> call = api.createOrder(
                 idPelanggan,
                 rNamaKirim,
@@ -705,8 +692,10 @@ public class activity_checkout extends AppCompatActivity {
                         JSONObject json = new JSONObject(jsonResponse);
 
                         if (json.getBoolean("status")) {
-                            // Membersihkan pesanan setelah checkout berhasil
                             orderHelper.clearOrder();
+
+                            // Update stock with improved method
+                            updateProductStockImproved(orderItems);
 
                             Toast.makeText(activity_checkout.this, "Pesanan berhasil dibuat", Toast.LENGTH_SHORT).show();
 
@@ -736,6 +725,93 @@ public class activity_checkout extends AppCompatActivity {
                 handleError("Error koneksi saat membuat pesanan", t);
             }
         });
+    }
+
+    private void updateProductStockImproved(List<OrderItem> orderItems) {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(ServerAPI.BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RegisterAPI api = retrofit.create(RegisterAPI.class);
+
+        showProgressDialog("Memperbarui stok produk...");
+
+        final int[] completedUpdates = {0};
+        final int totalUpdates = orderItems.size();
+
+        if (totalUpdates == 0) {
+            dismissProgressDialog();
+            return;
+        }
+
+        for (OrderItem item : orderItems) {
+            int quantity = item.getQuantity();
+            String productCode = item.getKode();
+
+            if (productCode == null || productCode.isEmpty()) {
+                Log.e("UPDATE_STOCK", "Product code is empty for item: " + item.getMerk());
+                completedUpdates[0]++;
+                continue;
+            }
+
+            Call<ResponseBody> call = api.updateStock(productCode, quantity);
+            call.enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    completedUpdates[0]++;
+
+                    if (response.isSuccessful()) {
+                        try {
+                            String jsonResponse = response.body().string();
+                            JSONObject json = new JSONObject(jsonResponse);
+
+                            if (json.getBoolean("status")) {
+                                Log.d("UPDATE_STOCK", "Success: " + json.getString("message") +
+                                        " | Product: " + productCode +
+                                        " | Qty: " + quantity);
+                            } else {
+                                Log.e("UPDATE_STOCK", "Failed: " + json.getString("message") +
+                                        " | Product: " + productCode);
+                            }
+                        } catch (Exception e) {
+                            Log.e("UPDATE_STOCK", "Error parsing response for product: " + productCode, e);
+                        }
+                    } else {
+                        try {
+                            String errorBody = response.errorBody() != null ? response.errorBody().string() : "null";
+                            Log.e("UPDATE_STOCK", "Failed: " + response.code() +
+                                    " | Product: " + productCode +
+                                    " | Error: " + errorBody);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    if (completedUpdates[0] >= totalUpdates) {
+                        dismissProgressDialog();
+                        runOnUiThread(() ->
+                                Toast.makeText(activity_checkout.this,
+                                        "Pembaruan stok selesai",
+                                        Toast.LENGTH_SHORT).show());
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    completedUpdates[0]++;
+                    Log.e("UPDATE_STOCK", "Network error for product: " + productCode, t);
+
+                    if (completedUpdates[0] >= totalUpdates) {
+                        dismissProgressDialog();
+                        runOnUiThread(() ->
+                                Toast.makeText(activity_checkout.this,
+                                        "Pembaruan stok selesai (beberapa mungkin gagal)",
+                                        Toast.LENGTH_SHORT).show());
+                    }
+                }
+            });
+        }
     }
 
     private void showProgressDialog(String message) {
@@ -769,5 +845,4 @@ public class activity_checkout extends AppCompatActivity {
         dismissProgressDialog();
         super.onDestroy();
     }
-
 }

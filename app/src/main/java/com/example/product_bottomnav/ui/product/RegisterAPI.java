@@ -47,6 +47,13 @@ public interface RegisterAPI {
     Call<UserResponse> getProfile(@Query("email") String email);
 
     @FormUrlEncoded
+    @POST("update_stock.php")
+    Call<ResponseBody> updateStock(
+            @Field("kode") String kode,
+            @Field("quantity") int quantity
+    );
+
+    @FormUrlEncoded
     @POST("update_profile_fields.php")
     Call<ResponseModel> updateProfileFields(
             @Field("user_id") String userId,
