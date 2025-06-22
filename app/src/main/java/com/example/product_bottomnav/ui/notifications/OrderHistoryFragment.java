@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,7 +24,10 @@ import com.example.product_bottomnav.ui.product.ServerAPI;
 import com.example.product_bottomnav.ui.product.SharedPrefManager;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.List;
+import java.util.UUID;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -37,29 +40,21 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class OrderHistoryFragment extends Fragment {
-
+    private static final int PICK_IMAGE_REQUEST = 1;
     private RecyclerView rvOrder;
     private OrderHistoryAdapter adapter;
-    private static final int PICK_IMAGE_REQUEST = 1;
-
     private Uri imageUri;
     private OrderModel selectedOrder;
     private int userId;
-    private String metodeBayar = "transfer";  // Menambahkan metode pembayaran default
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_order_history, container, false);
-
-        // Mendapatkan userId dari SharedPreferences
-        userId = SharedPrefManager.getInstance(getContext()).getUserId();
-
+        userId = SharedPrefManager.getInstance(requireContext()).getUserId();
         rvOrder = view.findViewById(R.id.rvOrderHistory);
         rvOrder.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        loadOrderHistory(); // Memuat riwayat pesanan saat view dibuka
-
+        loadOrderHistory();
         return view;
     }
 
@@ -72,96 +67,121 @@ public class OrderHistoryFragment extends Fragment {
             public void onResponse(Call<ResponseOrderHistory> call, Response<ResponseOrderHistory> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().isStatus()) {
                     List<OrderModel> orderList = response.body().getData();
-
-                    adapter = new OrderHistoryAdapter(getContext(), orderList, new OrderHistoryAdapter.OnUploadClickListener() {
-                        @Override
-                        public void onPilihGambarClicked(OrderModel order) {
-                            selectedOrder = order;
-                            openGallery(); // Buka galeri untuk memilih gambar
-                        }
+                    adapter = new OrderHistoryAdapter(requireContext(), orderList, order -> {
+                        selectedOrder = order;
+                        openGallery();
                     });
-
-                    rvOrder.setAdapter(adapter); // Set adapter ke RecyclerView
+                    rvOrder.setAdapter(adapter);
                 } else {
-                    Toast.makeText(getContext(), "Gagal: " + (response.body() != null ? response.body().getMessage() : "Null response"), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), "Gagal memuat riwayat pesanan", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<ResponseOrderHistory> call, Throwable t) {
-                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void openGallery() {
-        Intent intent = new Intent(Intent.ACTION_PICK);
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
-        startActivityForResult(intent, PICK_IMAGE_REQUEST); // Menunggu gambar yang dipilih
+        startActivityForResult(intent, PICK_IMAGE_REQUEST);
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
-            imageUri = data.getData(); // Mendapatkan URI gambar yang dipilih
-            uploadBuktiBayar(selectedOrder.getTrans_id(), imageUri, metodeBayar); // Mengirimkan metodeBayar
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null) {
+            imageUri = data.getData();
+            if (imageUri != null) {
+                uploadBuktiBayar(selectedOrder.getTrans_id(), imageUri);
+            }
         }
     }
 
-    private void uploadBuktiBayar(int transId, Uri imageUri, String metodeBayar) {
-        String filePath = getRealPathFromURI(imageUri); // Mendapatkan path file gambar
-        if (filePath == null) {
-            Toast.makeText(getContext(), "Gagal membaca file gambar", Toast.LENGTH_SHORT).show();
-            return;
-        }
+    private void uploadBuktiBayar(int transId, Uri uri) {
+        try {
+            InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
+            String fileName = getFileName(uri);
 
-        File file = new File(filePath);
-        RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
-        MultipartBody.Part body = MultipartBody.Part.createFormData("bukti_bayar", file.getName(), requestFile);
+            // Jika nama file tidak ditemukan, gunakan nama acak
+            if (fileName == null || fileName.isEmpty()) {
+                fileName = "bukti_bayar_" + UUID.randomUUID().toString() + ".jpg";
+            }
 
-        RequestBody transIdBody = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(transId));
-        RequestBody metodeBayarBody = RequestBody.create(MediaType.parse("text/plain"), metodeBayar);  // Mengirimkan metodeBayar
+            File file = new File(requireContext().getCacheDir(), fileName);
+            FileOutputStream outputStream = new FileOutputStream(file);
+            byte[] buffer = new byte[4 * 1024];
+            int read;
+            while ((read = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, read);
+            }
+            outputStream.flush();
+            outputStream.close();
+            inputStream.close();
 
-        // Retrofit untuk mengirimkan data
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(ServerAPI.BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
+            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
+            MultipartBody.Part body = MultipartBody.Part.createFormData("bukti_bayar", file.getName(), requestFile);
+            RequestBody transIdBody = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(transId));
+            RequestBody metodeBayarBody = RequestBody.create(MediaType.parse("text/plain"), "transfer");
 
-        RegisterAPI api = retrofit.create(RegisterAPI.class);
-        Call<ResponseBody> call = api.uploadBuktiBayar(transIdBody, body, metodeBayarBody);  // Menambahkan metodeBayar
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl(ServerAPI.BASE_URL)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
 
-        // Eksekusi API call
-        call.enqueue(new Callback<ResponseBody>() {
-            @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(getContext(), "Upload berhasil", Toast.LENGTH_SHORT).show();
-                    loadOrderHistory(); // Refresh list setelah upload berhasil
-                } else {
-                    Toast.makeText(getContext(), "Upload gagal: " + response.message(), Toast.LENGTH_SHORT).show();
+            RegisterAPI api = retrofit.create(RegisterAPI.class);
+            Call<ResponseBody> call = api.uploadBuktiBayar(transIdBody, body, metodeBayarBody);
+
+            call.enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    if (response.isSuccessful()) {
+                        Toast.makeText(requireContext(), "Upload berhasil", Toast.LENGTH_SHORT).show();
+                        loadOrderHistory();
+                    } else {
+                        Toast.makeText(requireContext(), "Upload gagal: " + response.message(), Toast.LENGTH_SHORT).show();
+                    }
                 }
-            }
 
-            @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Toast.makeText(getContext(), "Upload gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (Exception e) {
+            Toast.makeText(requireContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
-    private String getRealPathFromURI(Uri uri) {
-        String[] projection = {MediaStore.Images.Media.DATA};
-        Cursor cursor = getContext().getContentResolver().query(uri, projection, null, null, null);
-        if (cursor != null) {
-            int colIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-            cursor.moveToFirst();
-            String result = cursor.getString(colIndex);
-            cursor.close();
-            return result;
+    private String getFileName(Uri uri) {
+        String result = null;
+
+        if (uri.getScheme() != null && uri.getScheme().equals("content")) {
+            try (Cursor cursor = requireContext().getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    // Periksa apakah kolom ada sebelum mencoba mengaksesnya
+                    if (columnIndex >= 0) {
+                        result = cursor.getString(columnIndex);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
-        return null;
+
+        // Jika masih null, coba dapatkan dari path
+        if (result == null && uri.getPath() != null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+
+        return result;
     }
 }

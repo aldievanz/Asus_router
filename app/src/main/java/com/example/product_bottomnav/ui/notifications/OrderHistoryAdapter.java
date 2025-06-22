@@ -56,27 +56,29 @@ public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapte
         holder.tvOngkir.setText("Ongkir: " + formatRupiah(order.getOngkir()));
         holder.tvTotalBayar.setText("Total: " + formatRupiah(order.getTotal_bayar()));
         holder.tvStatus.setText("Status: " + order.getStatus());
+        holder.tvMetodeBayar.setText(order.getMetode_bayar().toUpperCase());
 
+        // Logika tampilan upload bukti bayar
         if (order.getMetode_bayar().equalsIgnoreCase("cod")) {
-            // Metode bayar COD -> sembunyikan layout upload
             holder.layoutUpload.setVisibility(View.GONE);
             holder.imgBuktiBayar.setVisibility(View.GONE);
-        } else if (order.getBukti_bayar() == null || order.getBukti_bayar().isEmpty()) {
-            // Transfer dan belum upload
-            holder.layoutUpload.setVisibility(View.VISIBLE);
-            holder.imgBuktiBayar.setVisibility(View.GONE);
-
-            holder.btnPilihGambar.setOnClickListener(v -> uploadClickListener.onPilihGambarClicked(order));
         } else {
-            // Transfer dan sudah upload
-            holder.layoutUpload.setVisibility(View.GONE);
-            holder.imgBuktiBayar.setVisibility(View.VISIBLE);
+            holder.tvMetodePembayaran.setVisibility(View.VISIBLE);
+            holder.tvMetodeBayar.setVisibility(View.VISIBLE);
 
-            Glide.with(context)
-                    .load(ServerAPI.BASE_URL + "images/" + order.getBukti_bayar())
-                    .into(holder.imgBuktiBayar);
+            if (order.getBukti_bayar() == null || order.getBukti_bayar().isEmpty()) {
+                holder.layoutUpload.setVisibility(View.VISIBLE);
+                holder.imgBuktiBayar.setVisibility(View.GONE);
+                holder.btnPilihGambar.setOnClickListener(v -> uploadClickListener.onPilihGambarClicked(order));
+            } else {
+                holder.layoutUpload.setVisibility(View.GONE);
+                holder.imgBuktiBayar.setVisibility(View.VISIBLE);
+                Glide.with(context)
+                        .load(ServerAPI.BASE_URL + "images/" + order.getBukti_bayar())
+                        .placeholder(R.drawable.asus)
+                        .into(holder.imgBuktiBayar);
+            }
         }
-
     }
 
     @Override
@@ -85,9 +87,10 @@ public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapte
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvNamaMobil, tvAlamat, tvEstimasi, tvTanggalOrder, tvSubtotal, tvOngkir, tvTotalBayar, tvStatus;
+        TextView tvNamaMobil, tvAlamat, tvEstimasi, tvTanggalOrder, tvSubtotal,
+                tvOngkir, tvTotalBayar, tvStatus, tvMetodePembayaran, tvMetodeBayar;
         LinearLayout layoutUpload;
-        Button btnPilihGambar, btnUpload;
+        Button btnPilihGambar;
         ImageView imgBuktiBayar;
 
         public ViewHolder(@NonNull View itemView) {
@@ -100,12 +103,13 @@ public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapte
             tvOngkir = itemView.findViewById(R.id.tvOngkir);
             tvTotalBayar = itemView.findViewById(R.id.tvTotalBayar);
             tvStatus = itemView.findViewById(R.id.tvStatus);
+            tvMetodePembayaran = itemView.findViewById(R.id.tvMetodePembayaran);
+            tvMetodeBayar = itemView.findViewById(R.id.tvMetodeBayar);
             layoutUpload = itemView.findViewById(R.id.layoutUpload);
             btnPilihGambar = itemView.findViewById(R.id.btnPilihGambar);
             imgBuktiBayar = itemView.findViewById(R.id.imgBuktiBayar);
         }
     }
-
 
     private String formatRupiah(double amount) {
         NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));

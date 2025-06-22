@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.product_bottomnav.R;
+import com.example.product_bottomnav.ui.dashboard.OrderHelper;
 import com.example.product_bottomnav.ui.dashboard.OrderItem;
 import com.example.product_bottomnav.ui.product.RegisterAPI;
 import com.example.product_bottomnav.ui.product.ServerAPI;
@@ -48,7 +49,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class activity_checkout extends AppCompatActivity {
 
-    // Declare UI components
+    // Deklarasi komponen UI
     private TextView tvUserName;
     private EditText etShippingAddress, etShippingPhone, etKodePos;
     private Spinner spinnerProvince, spinnerCity, spinnerCourier;
@@ -57,22 +58,23 @@ public class activity_checkout extends AppCompatActivity {
     private TextView tvSubtotal, tvShippingCost, tvShippingEstimation, tvTotalPayment;
     private RecyclerView recyclerViewOrderItems;
     private OrderItemAdapter orderItemAdapter;
+    private OrderHelper orderHelper;
 
-    // Province and city data
+    // Data untuk provinsi dan kota
     private ArrayList<String> provinceNames = new ArrayList<>();
     private ArrayList<Integer> provinceIds = new ArrayList<>();
     private ArrayList<String> cityNames = new ArrayList<>();
     private ArrayList<Integer> cityIds = new ArrayList<>();
 
-    // Shipping and payment data
+    // Variabel lainnya
     private int selectedCityId = 0;
     private double subtotal = 0;
     private double shippingCost = 0;
     private String shippingEstimation = "";
     private String selectedCourier = "";
-    private String originCityId = "399"; // Origin city ID (can be adjusted)
+    private String originCityId = "399"; // ID kota asal
 
-    // User data
+    // Data user
     private int userId;
     private String userName = "";
     private String userAddress = "";
@@ -81,18 +83,23 @@ public class activity_checkout extends AppCompatActivity {
     private String userProvince = "";
     private String userPostalCode = "";
 
-    // Currency format
     private NumberFormat currencyFormat;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_checkout);
 
-        // Initialize currency format
+        // Inisialisasi format mata uang
         currencyFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
         currencyFormat.setMaximumFractionDigits(0);
 
+        // Inisialisasi OrderHelper
+        userId = SharedPrefManager.getInstance(this).getUserId();
+        orderHelper = new OrderHelper(this, userId);
+
+        // Setup UI
         initUI();
         loadUserData();
         setupRecyclerView();
@@ -121,9 +128,11 @@ public class activity_checkout extends AppCompatActivity {
     private void setupRecyclerView() {
         ArrayList<OrderItem> orderItems = getIntent().getParcelableArrayListExtra("ORDER_ITEMS");
 
-        if (orderItems == null) {
+        if (orderItems == null || orderItems.isEmpty()) {
             orderItems = new ArrayList<>();
-            Log.e("CHECKOUT_DEBUG", "Order items list is empty");
+            Toast.makeText(this, "Tidak ada item untuk checkout", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
         recyclerViewOrderItems.setLayoutManager(new LinearLayoutManager(this));
@@ -163,8 +172,7 @@ public class activity_checkout extends AppCompatActivity {
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
 
@@ -187,8 +195,7 @@ public class activity_checkout extends AppCompatActivity {
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
 
         spinnerCity.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -203,17 +210,27 @@ public class activity_checkout extends AppCompatActivity {
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
 
         btnCheckShipping.setOnClickListener(v -> {
             if (validateBeforeCheckShipping()) {
-                checkShippingCost(originCityId, String.valueOf(selectedCityId), 1000, selectedCourier);
+                checkShippingCost(originCityId, String.valueOf(selectedCityId), calculateTotalWeight(), selectedCourier);
             }
         });
 
         btnPayNow.setOnClickListener(v -> processPayment());
+    }
+
+    private int calculateTotalWeight() {
+        List<OrderItem> items = orderItemAdapter.getOrderItems();
+        int totalWeight = 0;
+        // Berat default per item 1kg (1000 gram)
+        final int DEFAULT_ITEM_WEIGHT = 1000;
+        for (OrderItem item : items) {
+            totalWeight += DEFAULT_ITEM_WEIGHT * item.getQuantity();
+        }
+        return totalWeight < 1000 ? 1000 : totalWeight; // Minimal berat 1kg
     }
 
     private void loadUserData() {
@@ -235,10 +252,7 @@ public class activity_checkout extends AppCompatActivity {
     }
 
     private void loadProvinces() {
-        ProgressDialog pd = new ProgressDialog(this);
-        pd.setMessage("Memuat data provinsi...");
-        pd.setCancelable(false);
-        pd.show();
+        showProgressDialog("Memuat data provinsi...");
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(ServerAPI.BASE_URL)
@@ -251,7 +265,7 @@ public class activity_checkout extends AppCompatActivity {
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                pd.dismiss();
+                dismissProgressDialog();
                 if (!response.isSuccessful()) {
                     handleError("Gagal memuat provinsi: " + response.code(), null);
                     return;
@@ -295,7 +309,7 @@ public class activity_checkout extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                pd.dismiss();
+                dismissProgressDialog();
                 handleError("Error koneksi saat memuat provinsi", t);
             }
         });
@@ -312,10 +326,7 @@ public class activity_checkout extends AppCompatActivity {
             return;
         }
 
-        ProgressDialog pd = new ProgressDialog(this);
-        pd.setMessage("Memuat data kota...");
-        pd.setCancelable(false);
-        pd.show();
+        showProgressDialog("Memuat data kota...");
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(ServerAPI.BASE_URL)
@@ -328,7 +339,7 @@ public class activity_checkout extends AppCompatActivity {
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                pd.dismiss();
+                dismissProgressDialog();
                 if (!response.isSuccessful()) {
                     handleError("Gagal memuat kota: " + response.code(), null);
                     return;
@@ -372,7 +383,7 @@ public class activity_checkout extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                pd.dismiss();
+                dismissProgressDialog();
                 handleError("Error koneksi saat memuat kota", t);
             }
         });
@@ -393,14 +404,7 @@ public class activity_checkout extends AppCompatActivity {
     }
 
     private void checkShippingCost(String origin, String destination, int weight, String courier) {
-        ProgressDialog pd = new ProgressDialog(this);
-        pd.setMessage("Menghitung ongkos kirim...");
-        pd.setCancelable(false);
-        pd.show();
-
-        if (weight < 1000) {
-            weight = 1000;
-        }
+        showProgressDialog("Menghitung ongkos kirim...");
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(ServerAPI.BASE_URL)
@@ -413,7 +417,7 @@ public class activity_checkout extends AppCompatActivity {
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                pd.dismiss();
+                dismissProgressDialog();
                 if (!response.isSuccessful()) {
                     showShippingError(courier, "Gagal mendapatkan ongkir: " + response.code());
                     return;
@@ -453,7 +457,7 @@ public class activity_checkout extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                pd.dismiss();
+                dismissProgressDialog();
                 handleError("Error koneksi saat cek ongkir", t);
             }
         });
@@ -605,24 +609,21 @@ public class activity_checkout extends AppCompatActivity {
         if (!validatePayment()) return;
 
         RadioButton selectedPayment = findViewById(radioPaymentMethod.getCheckedRadioButtonId());
-        String paymentMethod = selectedPayment.getText().toString();
+        String paymentMethod = selectedPayment.getText().toString().toLowerCase();
 
-        ProgressDialog pd = new ProgressDialog(this);
-        pd.setMessage("Memproses pesanan...");
-        pd.setCancelable(false);
-        pd.show();
+        // Konversi ke format yang sesuai untuk database
+        if (paymentMethod.contains("cod") || paymentMethod.contains("cash on delivery")) {
+            paymentMethod = "cod";
+        } else {
+            paymentMethod = "transfer";
+        }
 
-        // Implement saving order to database or API
+        showProgressDialog("Memproses pesanan...");
         saveOrderToDatabase(paymentMethod);
     }
 
     private void saveOrderToDatabase(String paymentMethod) {
-        ProgressDialog pd = new ProgressDialog(this);
-        pd.setMessage("Memproses pesanan...");
-        pd.setCancelable(false);
-        pd.show();
-
-        // Get data from form
+        // Ambil data dari form
         String namaKirim = tvUserName.getText().toString();
         String alamatKirim = etShippingAddress.getText().toString().trim();
         String kotaKirim = spinnerCity.getSelectedItem().toString();
@@ -631,13 +632,13 @@ public class activity_checkout extends AppCompatActivity {
         String telpKirim = etShippingPhone.getText().toString().trim();
         String emailKirim = SharedPrefManager.getInstance(this).getEmail();
 
-        // Calculate total
+        // Hitung total pembayaran
         double totalBayar = subtotal + shippingCost;
 
-        // Get order items from adapter
+        // Ambil daftar item dari adapter
         List<OrderItem> orderItems = orderItemAdapter.getOrderItems();
 
-        // Create request to save order
+        // Buat request untuk menyimpan pesanan
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(ServerAPI.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -645,7 +646,7 @@ public class activity_checkout extends AppCompatActivity {
 
         RegisterAPI api = retrofit.create(RegisterAPI.class);
 
-        // Create request body
+        // Buat request body
         RequestBody idPelanggan = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(userId));
         RequestBody rNamaKirim = RequestBody.create(MediaType.parse("text/plain"), namaKirim);
         RequestBody rEmailKirim = RequestBody.create(MediaType.parse("text/plain"), emailKirim);
@@ -658,14 +659,14 @@ public class activity_checkout extends AppCompatActivity {
         RequestBody rSubtotal = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(subtotal));
         RequestBody rOngkir = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(shippingCost));
         RequestBody rTotalBayar = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(totalBayar));
-        RequestBody rMetodeBayar = RequestBody.create(MediaType.parse("text/plain"), paymentMethod.toLowerCase());
-        RequestBody rStatus = RequestBody.create(MediaType.parse("text/plain"), "menunggu");
+        RequestBody rMetodeBayar = RequestBody.create(MediaType.parse("text/plain"), paymentMethod);
+        RequestBody rStatus = RequestBody.create(MediaType.parse("text/plain"), paymentMethod.equals("cod") ? "diproses" : "menunggu");
 
-        // Create list for order details
+        // Buat list untuk detail pesanan
         List<MultipartBody.Part> detailParts = new ArrayList<>();
         for (OrderItem item : orderItems) {
             RequestBody kode = RequestBody.create(MediaType.parse("text/plain"), item.getKode());
-            RequestBody harga = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(item.getHarga()));
+            RequestBody harga = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(item.getHargajual()));
             RequestBody qty = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(item.getQuantity()));
             RequestBody bayar = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(item.getSubtotal()));
 
@@ -675,6 +676,7 @@ public class activity_checkout extends AppCompatActivity {
             detailParts.add(MultipartBody.Part.createFormData("bayar[]", null, bayar));
         }
 
+        // Kirim request untuk membuat pesanan
         Call<ResponseBody> call = api.createOrder(
                 idPelanggan,
                 rNamaKirim,
@@ -696,17 +698,19 @@ public class activity_checkout extends AppCompatActivity {
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                pd.dismiss();
+                dismissProgressDialog();
                 if (response.isSuccessful()) {
                     try {
                         String jsonResponse = response.body().string();
                         JSONObject json = new JSONObject(jsonResponse);
 
                         if (json.getBoolean("status")) {
+                            // Membersihkan pesanan setelah checkout berhasil
+                            orderHelper.clearOrder();
+
                             Toast.makeText(activity_checkout.this, "Pesanan berhasil dibuat", Toast.LENGTH_SHORT).show();
 
-                            // If payment method is transfer, navigate to upload payment proof
-                            if (paymentMethod.equalsIgnoreCase("transfer")) {
+                            if (paymentMethod.equals("transfer")) {
                                 int transId = json.getInt("trans_id");
                                 Intent intent = new Intent(activity_checkout.this, UploadBuktiBayarActivity.class);
                                 intent.putExtra("TRANS_ID", transId);
@@ -714,7 +718,7 @@ public class activity_checkout extends AppCompatActivity {
                                 startActivity(intent);
                             }
 
-                            finish(); // Close checkout activity
+                            finish();
                         } else {
                             Toast.makeText(activity_checkout.this, "Gagal: " + json.getString("message"), Toast.LENGTH_SHORT).show();
                         }
@@ -728,10 +732,25 @@ public class activity_checkout extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                pd.dismiss();
+                dismissProgressDialog();
                 handleError("Error koneksi saat membuat pesanan", t);
             }
         });
+    }
+
+    private void showProgressDialog(String message) {
+        if (progressDialog == null) {
+            progressDialog = new ProgressDialog(this);
+            progressDialog.setCancelable(false);
+        }
+        progressDialog.setMessage(message);
+        progressDialog.show();
+    }
+
+    private void dismissProgressDialog() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+        }
     }
 
     private void handleError(String message, Throwable t) {
@@ -744,4 +763,11 @@ public class activity_checkout extends AppCompatActivity {
             Toast.makeText(activity_checkout.this, errorMsg, Toast.LENGTH_LONG).show();
         });
     }
+
+    @Override
+    protected void onDestroy() {
+        dismissProgressDialog();
+        super.onDestroy();
+    }
+
 }

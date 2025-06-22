@@ -2,10 +2,9 @@ package com.example.product_bottomnav.ui.checkout;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -18,9 +17,9 @@ import com.example.product_bottomnav.R;
 import com.example.product_bottomnav.ui.product.RegisterAPI;
 import com.example.product_bottomnav.ui.product.ServerAPI;
 
-import org.json.JSONObject;
-
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.text.NumberFormat;
 import java.util.Locale;
 
@@ -35,7 +34,6 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class UploadBuktiBayarActivity extends AppCompatActivity {
-
     private static final int PICK_IMAGE_REQUEST = 1;
     private ImageView imgBuktiBayar;
     private Button btnPilihGambar, btnUpload;
@@ -43,29 +41,24 @@ public class UploadBuktiBayarActivity extends AppCompatActivity {
     private Uri imageUri;
     private int transId;
     private double totalBayar;
-    String metodeBayar = "transfer";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_upload_bukti_bayar);
 
-        // Inisialisasi view
         imgBuktiBayar = findViewById(R.id.imgBuktiBayar);
         btnPilihGambar = findViewById(R.id.btnPilihGambar);
         btnUpload = findViewById(R.id.btnUpload);
         tvTransId = findViewById(R.id.tvTransId);
         tvTotalBayar = findViewById(R.id.tvTotalBayar);
 
-        // Dapatkan data dari intent
         transId = getIntent().getIntExtra("TRANS_ID", 0);
         totalBayar = getIntent().getDoubleExtra("TOTAL_BAYAR", 0);
 
-        // Tampilkan data transaksi
         tvTransId.setText("#" + transId);
         tvTotalBayar.setText(formatRupiah(totalBayar));
 
-        // Setup listeners
         btnPilihGambar.setOnClickListener(v -> openGallery());
         btnUpload.setOnClickListener(v -> {
             if (imageUri != null) {
@@ -77,7 +70,7 @@ public class UploadBuktiBayarActivity extends AppCompatActivity {
     }
 
     private void openGallery() {
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         startActivityForResult(intent, PICK_IMAGE_REQUEST);
     }
@@ -85,8 +78,7 @@ public class UploadBuktiBayarActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
             imageUri = data.getData();
             imgBuktiBayar.setImageURI(imageUri);
             btnUpload.setEnabled(true);
@@ -99,91 +91,75 @@ public class UploadBuktiBayarActivity extends AppCompatActivity {
         pd.setCancelable(false);
         pd.show();
 
-        String filePath = getRealPathFromURI(imageUri); // Mendapatkan path file gambar
-        if (filePath == null) {
-            pd.dismiss();
-            Toast.makeText(this, "Gagal membaca file gambar", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        try {
+            InputStream inputStream = getContentResolver().openInputStream(imageUri);
+            String fileName = getFileName(imageUri);
+            File file = new File(getCacheDir(), fileName);
+            FileOutputStream outputStream = new FileOutputStream(file);
+            byte[] buffer = new byte[4 * 1024];
+            int read;
+            while ((read = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, read);
+            }
+            outputStream.flush();
+            outputStream.close();
+            inputStream.close();
 
-        // Membaca file gambar
-        File file = new File(filePath);
-        RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
-        MultipartBody.Part body = MultipartBody.Part.createFormData(
-                "bukti_bayar",  // Key yang digunakan di server
-                file.getName(),
-                requestFile
-        );
+            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
+            MultipartBody.Part body = MultipartBody.Part.createFormData("bukti_bayar", file.getName(), requestFile);
+            RequestBody transIdBody = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(transId));
+            RequestBody metodeBayarBody = RequestBody.create(MediaType.parse("text/plain"), "transfer");
 
-        RequestBody transIdBody = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(transId)); // Menambahkan trans_id
-        RequestBody metodeBayarBody = RequestBody.create(MediaType.parse("text/plain"), metodeBayar); // Menambahkan metode bayar
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl(ServerAPI.BASE_URL)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
 
-        // Membuat Retrofit instance untuk API call
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(ServerAPI.BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
+            RegisterAPI api = retrofit.create(RegisterAPI.class);
+            Call<ResponseBody> call = api.uploadBuktiBayar(transIdBody, body, metodeBayarBody);
 
-        RegisterAPI api = retrofit.create(RegisterAPI.class);
-        Call<ResponseBody> call = api.uploadBuktiBayar(transIdBody, body, metodeBayarBody); // Mengirimkan trans_id, gambar, dan metodeBayar
-
-        // Eksekusi API call
-        call.enqueue(new Callback<ResponseBody>() {
-            @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                pd.dismiss();
-                try {
-                    if (response.isSuccessful() && response.body() != null) {
-                        String jsonResponse = response.body().string();
-                        JSONObject json = new JSONObject(jsonResponse);
-
-                        if (json.getBoolean("status")) {
-                            Toast.makeText(UploadBuktiBayarActivity.this,
-                                    "Bukti bayar berhasil diupload",
-                                    Toast.LENGTH_SHORT).show();
-
-                            // Kirim result OK ke activity pemanggil jika perlu
-                            setResult(RESULT_OK);
-                            finish();
-                        } else {
-                            Toast.makeText(UploadBuktiBayarActivity.this,
-                                    "Gagal: " + json.getString("message"),
-                                    Toast.LENGTH_SHORT).show();
-                        }
+            call.enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    pd.dismiss();
+                    if (response.isSuccessful()) {
+                        Toast.makeText(UploadBuktiBayarActivity.this, "Bukti bayar berhasil diupload", Toast.LENGTH_SHORT).show();
+                        setResult(RESULT_OK);
+                        finish();
                     } else {
-                        Toast.makeText(UploadBuktiBayarActivity.this,
-                                "Error: " + response.code(),
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(UploadBuktiBayarActivity.this, "Upload gagal: " + response.message(), Toast.LENGTH_SHORT).show();
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    Toast.makeText(UploadBuktiBayarActivity.this,
-                            "Error parsing response",
-                            Toast.LENGTH_SHORT).show();
                 }
-            }
 
-            @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-                pd.dismiss();
-                Toast.makeText(UploadBuktiBayarActivity.this,
-                        "Error: " + t.getMessage(),
-                        Toast.LENGTH_SHORT).show();
-            }
-        });
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    pd.dismiss();
+                    Toast.makeText(UploadBuktiBayarActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (Exception e) {
+            pd.dismiss();
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
-
-    private String getRealPathFromURI(Uri uri) {
-        String[] projection = {MediaStore.Images.Media.DATA};
-        Cursor cursor = getContentResolver().query(uri, projection, null, null, null);
-        if (cursor == null) return null;
-
-        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-        cursor.moveToFirst();
-        String path = cursor.getString(column_index);
-        cursor.close();
-        return path;
+    private String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            try (android.database.Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                }
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
     }
 
     private String formatRupiah(double amount) {

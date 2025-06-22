@@ -2,7 +2,6 @@ package com.example.product_bottomnav.ui.dashboard;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-
 import com.example.product_bottomnav.ui.product.Product;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -13,7 +12,7 @@ import java.util.List;
 public class OrderHelper {
     private SharedPreferences sharedPreferences;
     private static final String PREF_NAME = "order_prefs";
-    private static final String ORDER_KEY_PREFIX = "order_items_user_"; // Prefix for user-specific orders
+    private static final String ORDER_KEY_PREFIX = "order_items_user_";
     private Gson gson = new Gson();
     private int userId;
 
@@ -22,12 +21,12 @@ public class OrderHelper {
         this.userId = userId;
     }
 
-    // Method to add an order item for a specific user
+    // Menambahkan produk ke pesanan
     public void addToOrder(Product product) {
         List<OrderItem> orderItems = getOrderItems();
         boolean exists = false;
 
-        // Check if product already exists, if so, just update the quantity
+        // Cek jika produk sudah ada, tinggal update jumlahnya
         for (OrderItem item : orderItems) {
             if (item.getKode().equals(product.getKode())) {
                 item.setQuantity(item.getQuantity() + 1);
@@ -36,7 +35,7 @@ public class OrderHelper {
             }
         }
 
-        // If not, add a new item
+        // Jika belum ada, tambahkan produk baru
         if (!exists) {
             orderItems.add(new OrderItem(product));
         }
@@ -44,7 +43,7 @@ public class OrderHelper {
         saveOrderItems(orderItems);
     }
 
-    // Method to remove an order item for a specific user
+    // Menghapus produk dari pesanan
     public void removeFromOrder(String productCode) {
         List<OrderItem> orderItems = getOrderItems();
         for (int i = 0; i < orderItems.size(); i++) {
@@ -56,7 +55,7 @@ public class OrderHelper {
         saveOrderItems(orderItems);
     }
 
-    // Method to update the quantity of an order item for a specific user
+    // Update jumlah produk dalam pesanan
     public void updateQuantity(String productCode, int quantity) {
         List<OrderItem> orderItems = getOrderItems();
         for (OrderItem item : orderItems) {
@@ -68,7 +67,7 @@ public class OrderHelper {
         saveOrderItems(orderItems);
     }
 
-    // Method to get the order items of a specific user
+    // Mendapatkan semua item pesanan
     public List<OrderItem> getOrderItems() {
         String json = sharedPreferences.getString(ORDER_KEY_PREFIX + userId, null);
         if (json == null) return new ArrayList<>();
@@ -77,7 +76,7 @@ public class OrderHelper {
         return gson.fromJson(json, type);
     }
 
-    // Method to get the total price of the order items for a specific user
+    // Menghitung total harga pesanan
     public double getTotal() {
         double total = 0;
         for (OrderItem item : getOrderItems()) {
@@ -86,9 +85,14 @@ public class OrderHelper {
         return total;
     }
 
-    // Method to save order items for a specific user
+    // Menyimpan pesanan ke SharedPreferences
     private void saveOrderItems(List<OrderItem> items) {
         String json = gson.toJson(items);
         sharedPreferences.edit().putString(ORDER_KEY_PREFIX + userId, json).apply();
+    }
+
+    // Membersihkan semua pesanan (dipanggil setelah checkout berhasil)
+    public void clearOrder() {
+        sharedPreferences.edit().remove(ORDER_KEY_PREFIX + userId).apply();
     }
 }

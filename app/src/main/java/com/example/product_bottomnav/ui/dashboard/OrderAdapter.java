@@ -43,14 +43,14 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> 
         holder.tvPrice.setText(String.format("Rp %,.0f", item.getHargajual()));
         holder.tvQuantity.setText(String.valueOf(item.getQuantity()));
 
-        // Load image
+        // Load gambar produk
         Glide.with(holder.itemView.getContext())
                 .load(ServerAPI.BASE_URL_Image + item.getFoto())
                 .placeholder(R.drawable.placeholder_product)
                 .error(R.drawable.placeholder_product)
                 .into(holder.imageProduct);
 
-        // Increase quantity
+        // Tombol tambah jumlah
         holder.btnIncrease.setOnClickListener(v -> {
             int newQuantity = item.getQuantity() + 1;
             item.setQuantity(newQuantity);
@@ -59,7 +59,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> 
             listener.onTotalUpdated(orderHelper.getTotal());
         });
 
-        // Decrease quantity
+        // Tombol kurang jumlah
         holder.btnDecrease.setOnClickListener(v -> {
             if (item.getQuantity() > 1) {
                 int newQuantity = item.getQuantity() - 1;
@@ -70,7 +70,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> 
             }
         });
 
-        // Remove item
+        // Tombol hapus item
         holder.btnRemove.setOnClickListener(v -> {
             orderHelper.removeFromOrder(item.getKode());
             orderItems.remove(position);

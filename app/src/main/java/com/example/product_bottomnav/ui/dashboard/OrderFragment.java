@@ -23,16 +23,18 @@ import java.util.List;
 public class OrderFragment extends Fragment {
     private FragmentOrderBinding binding;
     private OrderHelper orderHelper;
+    private OrderAdapter adapter;
 
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentOrderBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        // Get the logged-in user's userId
+        // Dapatkan userId dari user yang login
         int userId = SharedPrefManager.getInstance(requireContext()).getUserId();
 
-        // Initialize OrderHelper with the userId
+        // Inisialisasi OrderHelper dengan userId
         orderHelper = new OrderHelper(requireContext(), userId);
 
         binding.recyclerViewOrders.setNestedScrollingEnabled(false);
@@ -54,15 +56,31 @@ public class OrderFragment extends Fragment {
         return root;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Refresh daftar pesanan ketika kembali ke fragment ini
+        refreshOrderList();
+    }
+
     private void setupRecyclerView() {
         RecyclerView recyclerView = binding.recyclerViewOrders;
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         List<OrderItem> orderItems = orderHelper.getOrderItems();
-        OrderAdapter adapter = new OrderAdapter(orderItems, orderHelper, total -> {
+        adapter = new OrderAdapter(orderItems, orderHelper, total -> {
             binding.tvTotal.setText(String.format("Total Bayar: Rp %,.0f", total));
         });
         recyclerView.setAdapter(adapter);
+        binding.tvTotal.setText(String.format("Total Bayar: Rp %,.0f", orderHelper.getTotal()));
+    }
+
+    private void refreshOrderList() {
+        List<OrderItem> orderItems = orderHelper.getOrderItems();
+        adapter = new OrderAdapter(orderItems, orderHelper, total -> {
+            binding.tvTotal.setText(String.format("Total Bayar: Rp %,.0f", total));
+        });
+        binding.recyclerViewOrders.setAdapter(adapter);
         binding.tvTotal.setText(String.format("Total Bayar: Rp %,.0f", orderHelper.getTotal()));
     }
 
