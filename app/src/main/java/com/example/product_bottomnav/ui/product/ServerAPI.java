@@ -8,8 +8,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ServerAPI {
     // URL base untuk API dan gambar yang bisa diganti dengan mudah
-//     public static String BASE_URL = "https://aldievanz.my.id/android/";
-    public static String BASE_URL = "http://192.168.1.15/android/";  // Gantilah dengan IP atau domain baru
+     public static String BASE_URL = "https://aldievanz.my.id/android/";
+//    public static String BASE_URL = "http://192.168.1.15/android/";  // Gantilah dengan IP atau domain baru
     public static String BASE_URL_Image = BASE_URL + "images/";
     public static final String BASE_URL_Image_Avatar = BASE_URL + "images/avatars/";
     // URL gambar default

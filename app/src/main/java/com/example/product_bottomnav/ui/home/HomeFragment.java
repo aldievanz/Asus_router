@@ -1,8 +1,8 @@
 package com.example.product_bottomnav.ui.home;
 
+import static com.example.product_bottomnav.ui.product.ServerAPI.BASE_URL_Image_Avatar;
+
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +14,8 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.denzcoskun.imageslider.ImageSlider;
 import com.denzcoskun.imageslider.constants.ScaleTypes;
 import com.denzcoskun.imageslider.models.SlideModel;
@@ -26,7 +28,6 @@ import com.example.product_bottomnav.ui.product.RetrofitClient;
 import com.example.product_bottomnav.ui.product.SharedPrefManager;
 import com.example.product_bottomnav.ui.product.User;
 import com.example.product_bottomnav.ui.product.UserResponse;
-import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,9 +63,6 @@ public class HomeFragment extends Fragment {
         // Setup category filters
         setupCategoryFilters();
 
-        // Setup search functionality
-        setupSearch();
-
         // Fetch products
         fetchProducts();
 
@@ -80,9 +78,39 @@ public class HomeFragment extends Fragment {
                 // If logged in but name not saved, fetch from server
                 fetchUserProfile();
             }
+
+            // Fetch and display profile image
+            String imageUrl = sharedPrefManager.getImageUrl();
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                loadImageFromServer(imageUrl);  // Load profile image from server
+            } else {
+                loadDefaultImage();  // Load default image if URL is empty
+            }
+
         } else {
             binding.tvUsername.setText("Guest");
+            loadDefaultImage();  // Default image for guest
         }
+    }
+
+    private void loadImageFromServer(String imageUrl) {
+        String fullUrl = imageUrl.startsWith("http") ? imageUrl : BASE_URL_Image_Avatar + imageUrl;
+
+        Glide.with(this)
+                .load(fullUrl)
+                .circleCrop()
+                .skipMemoryCache(true)
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .placeholder(R.drawable.asus)  // Placeholder while loading
+                .error(R.drawable.asus)  // Default image on error
+                .into(binding.ivProfilePicHome);  // Target ImageView in HomeFragment
+    }
+
+    private void loadDefaultImage() {
+        Glide.with(this)
+                .load(R.drawable.asus)  // Default image if no profile image is found
+                .circleCrop()
+                .into(binding.ivProfilePicHome);
     }
 
     private void fetchUserProfile() {
@@ -142,17 +170,6 @@ public class HomeFragment extends Fragment {
         binding.btnwifi6.setOnClickListener(v -> filterByCategory("WIFI6"));
         binding.btnwifi5.setOnClickListener(v -> filterByCategory("WIFI5"));
         binding.btnwifi4.setOnClickListener(v -> filterByCategory("WIFI4"));
-    }
-
-    private void setupSearch() {
-        binding.etSearch.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                filterByKeyword(s.toString());
-            }
-            @Override public void afterTextChanged(Editable s) {}
-        });
     }
 
     private void fetchProducts() {
@@ -225,6 +242,7 @@ public class HomeFragment extends Fragment {
         productList.addAll(filtered);
         adapter.setFilteredList(productList);
     }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -236,6 +254,7 @@ public class HomeFragment extends Fragment {
             }
         }
     }
+
     private void filterByKeyword(String keyword) {
         if (adapter == null || allProducts == null) return;
 
@@ -244,7 +263,7 @@ public class HomeFragment extends Fragment {
         int count = 0;
 
         for (Product product : allProducts) {
-            if (product.getMerk().toLowerCase().contains(lowerKeyword)) {  // Added missing parenthesis here
+            if (product.getMerk().toLowerCase().contains(lowerKeyword)) {
                 if (count < 6) {
                     filteredList.add(product);
                     count++;

@@ -23,7 +23,6 @@ public class LoginActivity extends AppCompatActivity {
     private SharedPrefManager sharedPrefManager;
     private EditText editEmail, editPassword;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,17 +51,7 @@ public class LoginActivity extends AppCompatActivity {
         Button btnGuest = findViewById(R.id.btnguest);
         btnGuest.setOnClickListener(v -> {
             sharedPrefManager.loginUser(
-                    "guest",
-                    "",
-                    "0",
-                    "",
-                    "",
-                    "Guest",
-                    "",
-                    "",
-                    "",
-                    "",
-                    ""
+                    "guest", "", "0", "", "", "Guest", "", "", "", "", ""
             );
             startActivity(new Intent(LoginActivity.this, MainActivity.class));
             finish();
@@ -77,6 +66,12 @@ public class LoginActivity extends AppCompatActivity {
         // Listener untuk tombol login
         Button btnLogin = findViewById(R.id.btnLogin);
         btnLogin.setOnClickListener(v -> prosesLogin());
+
+        // Listener untuk "Lupa Password?"
+        TextView changePasswordLink = findViewById(R.id.changePasswordLink);
+        changePasswordLink.setOnClickListener(v -> {
+            startActivity(new Intent(LoginActivity.this, EditPassword.class));  // Pindah ke EditPasswordActivity
+        });
     }
 
     private void prosesLogin() {
@@ -118,13 +113,9 @@ public class LoginActivity extends AppCompatActivity {
                         editPassword.getText().toString(), // password
                         userData.getId(), // userId
                         userData.getEmail(), // email
-                        userData.getNama(), // nama
+                        userData.getNama(), // name
                         userData.getProfile_image(),
-                        "", // alamat (kosongkan jika tidak ada)
-                        "", // kota
-                        "", // provinsi
-                        "", // telp
-                        ""  // kodepos
+                        "", "", "", "", ""  // Data pengguna tambahan
                 );
 
                 Toast.makeText(this, "Login Berhasil", Toast.LENGTH_SHORT).show();

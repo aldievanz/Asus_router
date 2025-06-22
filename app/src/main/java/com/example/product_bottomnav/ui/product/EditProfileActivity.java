@@ -5,6 +5,7 @@ import static com.example.product_bottomnav.ui.product.ServerAPI.BASE_URL_Image_
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -13,6 +14,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
@@ -20,6 +22,7 @@ import com.example.product_bottomnav.R;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -39,6 +42,7 @@ public class EditProfileActivity extends AppCompatActivity {
     private TextView tvUsername;
     private ImageView ivProfile;
     private Uri selectedImageUri;
+    private Uri tempImageUri;
 
     private SharedPrefManager sharedPrefManager;
     private RegisterAPI apiInterface;
@@ -77,7 +81,7 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void openImageChooser() {
-        Intent intent = new Intent(Intent.ACTION_PICK);
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         intent.setType("image/*");
         startActivityForResult(Intent.createChooser(intent, "Pilih Gambar Profil"), PICK_IMAGE_REQUEST);
     }
@@ -91,32 +95,60 @@ public class EditProfileActivity extends AppCompatActivity {
         if (requestCode == PICK_IMAGE_REQUEST && data != null && data.getData() != null) {
             selectedImageUri = data.getData();
             cropImage(selectedImageUri);
-        } else if (requestCode == REQUEST_IMAGE_CROP && data != null) {
-            // Handle hasil crop image
-            Bundle extras = data.getExtras();
-            if (extras != null) {
+        } else if (requestCode == REQUEST_IMAGE_CROP) {
+            // Handle cropped image
+            if (tempImageUri != null) {
+                selectedImageUri = tempImageUri;
+            }
+
+            if (selectedImageUri != null) {
                 loadImage(selectedImageUri);
                 uploadImageToServer(selectedImageUri);
+            } else {
+                showToast("Gagal memproses gambar");
             }
         }
     }
 
     private void cropImage(Uri imageUri) {
         try {
+            // Create temp file for cropped image
+            File tempFile = createTempImageFile();
+            tempImageUri = FileProvider.getUriForFile(this,
+                    getPackageName() + ".provider",
+                    tempFile);
+
             Intent cropIntent = new Intent("com.android.camera.action.CROP");
             cropIntent.setDataAndType(imageUri, "image/*");
+            cropIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             cropIntent.putExtra("crop", "true");
             cropIntent.putExtra("aspectX", 1);
             cropIntent.putExtra("aspectY", 1);
             cropIntent.putExtra("outputX", 500);
             cropIntent.putExtra("outputY", 500);
-            cropIntent.putExtra("return-data", true);
+            cropIntent.putExtra("scale", true);
+            cropIntent.putExtra("return-data", false);
+            cropIntent.putExtra(MediaStore.EXTRA_OUTPUT, tempImageUri);
+            cropIntent.putExtra("outputFormat", "JPEG");
+
             startActivityForResult(cropIntent, REQUEST_IMAGE_CROP);
         } catch (Exception e) {
-            // Jika tidak ada aplikasi crop, langsung upload
+            Log.e("Crop Error", "Crop failed, proceeding without crop", e);
+            // If crop fails, proceed with original image
             loadImage(imageUri);
             uploadImageToServer(imageUri);
         }
+    }
+
+    private File createTempImageFile() throws IOException {
+        String timeStamp = String.valueOf(System.currentTimeMillis());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalCacheDir();
+        return File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
     }
 
     private void loadImage(Uri imageUri) {
@@ -210,9 +242,14 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
-        try (InputStream inputStream = getContentResolver().openInputStream(imageUri);
-             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+        try {
+            InputStream inputStream = getContentResolver().openInputStream(imageUri);
+            if (inputStream == null) {
+                showToast("Gagal membaca gambar");
+                return;
+            }
 
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             byte[] buffer = new byte[1024];
             int len;
             while ((len = inputStream.read(buffer)) > -1) {
@@ -221,7 +258,11 @@ public class EditProfileActivity extends AppCompatActivity {
             byte[] bytes = byteArrayOutputStream.toByteArray();
 
             RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), bytes);
-            MultipartBody.Part imagePart = MultipartBody.Part.createFormData("imageupload", "profile.jpg", requestFile);
+            MultipartBody.Part imagePart = MultipartBody.Part.createFormData(
+                    "imageupload",
+                    "profile_" + System.currentTimeMillis() + ".jpg",
+                    requestFile
+            );
             RequestBody emailPart = RequestBody.create(MediaType.parse("text/plain"), email);
 
             Call<ImageUploadResponse> call = apiInterface.uploadProfileImageWithEmail(imagePart, emailPart);
@@ -232,16 +273,18 @@ public class EditProfileActivity extends AppCompatActivity {
                         ImageUploadResponse responseModel = response.body();
                         if (responseModel.getKode() == 1) {
                             String imageUrl = responseModel.getImageUrl();
+                            // Add timestamp to force refresh
                             String imageUrlWithTimestamp = imageUrl + (imageUrl.contains("?") ? "&" : "?") + "t=" + System.currentTimeMillis();
 
                             sharedPrefManager.saveImageUrl(imageUrl);
                             loadImageFromServer(imageUrlWithTimestamp);
                             showToast("Foto profil berhasil diunggah");
                         } else {
-                            showToast(responseModel.getPesan() != null ? responseModel.getPesan() : "Gagal upload foto profil");
+                            showToast(responseModel.getPesan() != null ?
+                                    responseModel.getPesan() : "Gagal upload foto profil");
                         }
                     } else {
-                        showToast("Gagal mendapatkan respons dari server: " + response.code());
+                        showToast("Gagal mendapatkan respons dari server");
                     }
                 }
 
