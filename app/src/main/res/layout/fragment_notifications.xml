@@ -12,11 +12,13 @@
     <!-- Foto Profil -->
     <ImageView
         android:id="@+id/ivProfilePic"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
         android:layout_marginBottom="32dp"
         android:src="@drawable/asus"
-        android:layout_gravity="center" />
+        android:layout_gravity="center"
+        android:scaleType="centerCrop"
+        android:background="@drawable/circular_border" />
 
     <!-- Nama Pengguna -->
     <TextView
@@ -31,68 +33,103 @@
         android:layout_gravity="center_horizontal" />
 
     <!-- Tombol Edit Profil -->
-    <Button
-        android:id="@+id/btnEditProfile"
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Edit Profil"
-        android:textAllCaps="false"
-        android:backgroundTint="@color/purple_500"
-        android:textColor="@android:color/white"
-        android:elevation="6dp"
+        android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:drawableLeft="@drawable/baseline_emoji_emotions_24" />
+        android:radius="8dp"
+        android:elevation="4dp">
+        <Button
+            android:id="@+id/btnEditProfile"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/button_gradient"
+            android:drawableLeft="@drawable/ic_e_p"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:text="Edit Profil"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white" />
+    </androidx.cardview.widget.CardView>
 
     <!-- Tombol Ganti Password -->
-    <Button
-        android:id="@+id/btnEditPW"
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Ganti Password"
-        android:textAllCaps="false"
-        android:backgroundTint="@color/purple_200"
-        android:textColor="@android:color/white"
-        android:elevation="6dp"
+        android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:drawableLeft="@drawable/baseline_create_24" />
+        android:radius="8dp"
+        android:elevation="4dp">
+        <Button
+            android:id="@+id/btnEditPW"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Ganti Password"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:background="@drawable/button_gradient"
+            android:drawableLeft="@drawable/ic_g_p"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp" />
+    </androidx.cardview.widget.CardView>
 
     <!-- Tombol Info Pesanan -->
-    <Button
-        android:id="@+id/btnHistoryPesanan"
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="History Pesanan"
-        android:textAllCaps="false"
-        android:backgroundTint="@color/on_surface_variant"
-        android:textColor="@android:color/white"
-        android:elevation="6dp"
+        android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:drawableLeft="@drawable/baseline_create_24" />
+        android:radius="8dp"
+        android:elevation="4dp">
+        <Button
+            android:id="@+id/btnHistoryPesanan"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="History Pesanan"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:background="@drawable/button_gradient"
+            android:drawableLeft="@drawable/icon_h_p"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp" />
+    </androidx.cardview.widget.CardView>
 
     <!-- Tombol Informasi Perusahaan -->
-    <Button
-        android:id="@+id/btnKontakKami"
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Informasi Perusahaan"
-        android:textAllCaps="false"
-        android:backgroundTint="@color/teal_700"
-        android:textColor="@android:color/white"
-        android:elevation="6dp"
+        android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:drawableLeft="@drawable/baseline_create_24" />
+        android:radius="8dp"
+        android:elevation="4dp">
+        <Button
+            android:id="@+id/btnKontakKami"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Informasi Perusahaan"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:background="@drawable/bg_gradient"
+            android:drawableLeft="@drawable/perusahaan"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp" />
+    </androidx.cardview.widget.CardView>
 
     <!-- Tombol Logout -->
-    <Button
-        android:id="@+id/btnLogout"
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Logout"
-        android:textAllCaps="false"
-        android:backgroundTint="@color/blue_primary"
-        android:textColor="@android:color/white"
-        android:elevation="6dp"
+        android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:drawableLeft="@drawable/baseline_create_24" />
+        android:radius="8dp"
+        android:elevation="4dp">
+        <Button
+            android:id="@+id/btnLogout"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Logout"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:background="@drawable/bg_gradient"
+            android:drawableLeft="@drawable/logout_icon"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp" />
+    </androidx.cardview.widget.CardView>
 
 </LinearLayout>
